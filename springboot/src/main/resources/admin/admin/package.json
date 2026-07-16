@@ -1,0 +1,35 @@
+{
+  "name": "oa-admin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OA 后台管理前端",
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build"
+  },
+  "dependencies": {
+    "core-js": "^3.25.0",
+    "vue": "^2.7.10",
+    "vue-router": "^3.5.4",
+    "vuex": "^3.6.2",
+    "axios": "^0.27.2",
+    "element-ui": "2.15.14",
+    "echarts": "^5.4.0",
+    "js-cookie": "^3.0.5",
+    "nprogress": "^0.2.0"
+  },
+  "devDependencies": {
+    "@vue/cli-plugin-babel": "~5.0.0",
+    "@vue/cli-plugin-router": "~5.0.0",
+    "@vue/cli-plugin-vuex": "~5.0.0",
+    "@vue/cli-service": "~5.0.0",
+    "sass": "^1.50.0",
+    "sass-loader": "^12.6.0",
+    "vue-template-compiler": "^2.7.10"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ]
+}

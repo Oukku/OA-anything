@@ -1,0 +1,80 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /springboot-oa-v2
+
+spring:
+  application:
+    name: springboot-oa-v2
+  profiles:
+    active: dev
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/springboot_oa_v2?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456
+    hikari:
+      pool-name: OA-HikariCP
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+      timeout: 5s
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+# MyBatis Plus
+mybatis-plus:
+  mapper-locations: classpath*:mapper/empty.xml
+  type-aliases-package: com.jlwl.entity
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: delFlag
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# RAG 服务
+rag:
+  service-url: http://localhost:8001
+  timeout-ms: 60000
+
+# 日志
+logging:
+  level:
+    root: INFO
+    com.jlwl: DEBUG
+    org.springframework.web: INFO
+  file:
+    name: ./logs/springboot-oa-v2.log
+
+# 业务
+oa:
+  token:
+    expire-hours: 12
+    header: token
+  jwt:
+    secret: oa-v2-jwt-secret-please-change-in-production-2026
+    expire-minutes: 720
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn

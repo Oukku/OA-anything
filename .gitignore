@@ -1,0 +1,113 @@
+# ====================================
+# Java / Maven
+# ====================================
+target/
+*.class
+*.jar
+*.war
+*.ear
+.mvn/
+mvnw
+mvnw.cmd
+HELP.md
+.classpath
+.project
+.settings/
+.factorypath
+*.iml
+
+# ====================================
+# IDE 自动生成
+# ====================================
+.qoder/
+.idea/
+.vscode/
+*.code-workspace
+
+# ====================================
+# Node / Vue
+# ====================================
+node_modules/
+dist/
+.DS_Store
+.env.local
+.env.*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.vscode/
+.idea/
+
+# ====================================
+# Python / RAG
+# ====================================
+rag-venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.env
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# ====================================
+# 日志和运行时
+# ====================================
+*.log
+logs/
+*.pid
+*.seed
+*.pid.lock
+
+# ====================================
+# 数据和存储
+# ====================================
+rag-service/data/parsed/
+rag-service/data/uploads/
+rag-service/data/test-*.txt
+rag-service/data/last-upload.json
+rag-service/storage/
+rag-service/working_dir/
+!rag-service/data/.gitkeep
+!rag-service/storage/.gitkeep
+
+# ====================================
+# 缓存和临时
+# ====================================
+.cache/
+.tmp/
+*.tmp
+*.bak
+*.swp
+*~
+
+# ====================================
+# 系统
+# ====================================
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# ====================================
+# 测试和脚本
+# ====================================
+test-rag.py
+test-rag-quick.py
+dev-start.log
+rag-service.log
+rag-service-err.log
+dev-server.log
+build.log
+
+# ====================================
+# 备份
+# ====================================
+*.bak
+*.backup
+*.orig
