@@ -5,9 +5,11 @@ import store from './store'
 import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
 import './assets/main.css'
+import http from './utils/http'
 
 Vue.use(ElementUI, { size: 'small' })
 Vue.config.productionTip = false
+Vue.prototype.$http = http
 
 new Vue({
   router,

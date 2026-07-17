@@ -112,9 +112,16 @@ export default {
       loading: false,
       currentDocId: null,
       documents: [],
-      messages: [],
-      uploadUrl: this.$http.adornUrl('/springboot-oa-v2/rag/upload'),
-      uploadHeaders: { token: this.$store.state.user.token }
+      messages: []
+    }
+  },
+  computed: {
+    uploadUrl() {
+      const base = process.env.VUE_APP_BASE_API || '/springboot-oa-v2'
+      return (typeof window !== 'undefined' ? window.location.origin : '') + base + '/rag/upload'
+    },
+    uploadHeaders() {
+      return { token: localStorage.getItem('token') || '' }
     }
   },
   mounted() {
@@ -137,7 +144,7 @@ export default {
       this.$message.error('上传失败：' + (err.message || ''))
     },
     async loadDocuments() {
-      const { data } = await this.$http.get('/springboot-oa-v2/rag/documents')
+      const data = await this.$http.get('/rag/documents')
       if (data && data.code === 0) {
         this.documents = data.data || []
       } else if (Array.isArray(data)) {
@@ -146,7 +153,7 @@ export default {
     },
     async deleteDoc(d) {
       try { await this.$confirm(`确认删除「${d.filename}」？`, '提示', { type: 'warning' }) } catch { return }
-      await this.$http.delete(`/springboot-oa-v2/rag/documents/${d.id}`)
+      await this.$http.delete(`/rag/documents/${d.id}`)
       this.$message.success('已删除')
       this.loadDocuments()
     },
@@ -157,7 +164,7 @@ export default {
       this.question = ''
       this.loading = true
       try {
-        const { data } = await this.$http.post('/springboot-oa-v2/rag/query', {
+        const data = await this.$http.post('/rag/query', {
           question: q,
           mode: this.mode,
           kbId: 'default'
