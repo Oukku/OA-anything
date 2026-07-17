@@ -17,7 +17,7 @@ public class KbService {
 
     public List<KbEntity> listActive() {
         QueryWrapper<KbEntity> qw = new QueryWrapper<>();
-        qw.eq("status", 1).eq("del_flag", 0).orderByAsc("sort_order");
+        qw.eq("status", 1).eq("del_flag", 0).orderByDesc("create_time");
         return kbDao.selectList(qw);
     }
 

@@ -23,6 +23,7 @@ CREATE TABLE `users` (
   `password` varchar(100) NOT NULL COMMENT '密码',
   `role` varchar(100) DEFAULT '普通员工' COMMENT '角色',
   `addtime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '新增时间',
+  `del_flag` tinyint(4) DEFAULT 0 COMMENT '1=删除 0=正常',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='用户表';
@@ -54,6 +55,7 @@ CREATE TABLE `gonggaoxinxi` (
   `leixing` varchar(200) NOT NULL,
   `fabushijian` datetime DEFAULT NULL,
   `gonggaoneirong` longtext,
+  `del_flag` tinyint(4) DEFAULT 0 COMMENT '1=删除 0=正常',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='公告信息';
 
@@ -87,6 +89,7 @@ CREATE TABLE `gongzuorizhi` (
   `xingming` varchar(200) DEFAULT NULL,
   `bumen` varchar(200) DEFAULT NULL,
   `zhiwei` varchar(200) DEFAULT NULL,
+  `del_flag` tinyint(4) DEFAULT 0 COMMENT '1=删除 0=正常',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='工作日志';
 
@@ -171,6 +174,7 @@ CREATE TABLE `wenjianxinxi` (
   `zhiwei` varchar(200) DEFAULT NULL,
   `sfsh` varchar(200) DEFAULT '否',
   `shhf` longtext,
+  `del_flag` tinyint(4) DEFAULT 0 COMMENT '1=删除 0=正常',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='文件信息';
 

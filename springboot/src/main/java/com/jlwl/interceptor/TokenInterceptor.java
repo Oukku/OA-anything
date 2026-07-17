@@ -1,5 +1,6 @@
 package com.jlwl.interceptor;
 
+import com.jlwl.common.CacheUtils;
 import com.jlwl.common.R;
 import com.jlwl.dao.TokenDao;
 import com.jlwl.entity.TokenEntity;
@@ -24,10 +25,13 @@ import java.util.List;
 public class TokenInterceptor implements HandlerInterceptor {
 
     private final TokenDao tokenDao;
+    private final CacheUtils cacheUtils;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${oa.token.header:token}")
     private String tokenHeader;
+
+    private static final String TOKEN_CACHE_PREFIX = "oa:token:";
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -40,17 +44,22 @@ public class TokenInterceptor implements HandlerInterceptor {
             return false;
         }
         try {
-            List<TokenEntity> tokens = tokenDao.selectList(
-                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<TokenEntity>()
-                    .eq("token", token)
-                    .gt("expire_time", LocalDateTime.now())
-            );
-            if (tokens == null || tokens.isEmpty()) {
-                writeJson(response, 401, R.unauthorized());
-                return false;
+            // 1. 优先从 Redis 读取 token
+            TokenEntity t = getTokenFromCache(token);
+            if (t == null) {
+                List<TokenEntity> tokens = tokenDao.selectList(
+                    new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<TokenEntity>()
+                        .eq("token", token)
+                        .gt("expire_time", LocalDateTime.now())
+                );
+                if (tokens == null || tokens.isEmpty()) {
+                    writeJson(response, 401, R.unauthorized());
+                    return false;
+                }
+                t = tokens.get(0);
+                cacheToken(t);
             }
             // 注入用户信息到 request attribute
-            TokenEntity t = tokens.get(0);
             request.setAttribute("currentUserId", t.getUserId());
             request.setAttribute("currentUserType", t.getUserType());
             request.setAttribute("currentUsername", t.getUsername());
@@ -66,5 +75,34 @@ public class TokenInterceptor implements HandlerInterceptor {
         response.setStatus(status);
         response.setContentType("application/json;charset=UTF-8");
         response.getWriter().write(objectMapper.writeValueAsString(body));
+    }
+
+    private TokenEntity getTokenFromCache(String token) {
+        try {
+            String json = cacheUtils.get(TOKEN_CACHE_PREFIX + token);
+            if (json != null && !json.isEmpty()) {
+                TokenEntity t = objectMapper.readValue(json, TokenEntity.class);
+                if (t.getExpireTime() != null && t.getExpireTime().isAfter(LocalDateTime.now())) {
+                    return t;
+                }
+                cacheUtils.del(TOKEN_CACHE_PREFIX + token);
+            }
+        } catch (Exception e) {
+            log.warn("read token from redis failed", e);
+        }
+        return null;
+    }
+
+    private void cacheToken(TokenEntity t) {
+        try {
+            if (t.getExpireTime() != null) {
+                long ttl = java.time.temporal.ChronoUnit.SECONDS.between(LocalDateTime.now(), t.getExpireTime());
+                if (ttl > 0) {
+                    cacheUtils.set(TOKEN_CACHE_PREFIX + t.getToken(), objectMapper.writeValueAsString(t), ttl);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("cache token to redis failed", e);
+        }
     }
 }

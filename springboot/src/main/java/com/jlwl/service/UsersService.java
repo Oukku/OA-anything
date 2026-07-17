@@ -4,16 +4,20 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jlwl.common.CacheUtils;
 import com.jlwl.dao.TokenDao;
 import com.jlwl.dao.UsersDao;
 import com.jlwl.entity.TokenEntity;
 import com.jlwl.entity.UsersEntity;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,12 +27,17 @@ public class UsersService {
 
     private final UsersDao usersDao;
     private final TokenDao tokenDao;
+    private final CacheUtils cacheUtils;
+    private final ObjectMapper objectMapper;
 
     @Value("${oa.token.expire-hours:12}")
     private int expireHours;
 
-    /** 登录 - 校验账号密码，生成 token 写入数据库。 */
+    private static final String TOKEN_CACHE_PREFIX = "oa:token:";
+
+    /** 登录 - 校验账号密码，生成 token 写入数据库与 Redis。 */
     @Transactional
+    @SneakyThrows
     public TokenEntity login(String username, String password) {
         UsersEntity user = usersDao.selectOne(
             new QueryWrapper<UsersEntity>()
@@ -46,11 +55,17 @@ public class UsersService {
         token.setExpireTime(LocalDateTime.now().plusHours(expireHours));
         token.setCreateTime(LocalDateTime.now());
         tokenDao.insert(token);
+
+        long ttlSeconds = ChronoUnit.SECONDS.between(LocalDateTime.now(), token.getExpireTime());
+        if (ttlSeconds > 0) {
+            cacheUtils.set(TOKEN_CACHE_PREFIX + token.getToken(), objectMapper.writeValueAsString(token), ttlSeconds);
+        }
         return token;
     }
 
     public void logout(String token) {
         tokenDao.delete(new QueryWrapper<TokenEntity>().eq("token", token));
+        cacheUtils.del(TOKEN_CACHE_PREFIX + token);
     }
 
     public TokenEntity validateToken(String token) {
