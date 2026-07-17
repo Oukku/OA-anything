@@ -112,7 +112,12 @@ export default {
     async test() {
       const res = await this.$http.post('/ai/config/test', this.form)
       if (res && res.code === 0) {
-        this.$message.success('连通性测试通过')
+        const data = res.data || {}
+        if (data.ok) {
+          this.$message.success(data.msg || '连通性测试通过')
+        } else {
+          this.$message.error(data.msg || '测试失败')
+        }
       } else {
         this.$message.error(res && res.msg ? res.msg : '测试失败')
       }

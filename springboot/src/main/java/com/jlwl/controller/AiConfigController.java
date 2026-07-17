@@ -30,11 +30,6 @@ public class AiConfigController {
 
     @PostMapping("/test")
     public R<Map<String, Object>> test(@RequestBody AiConfigEntity e) {
-        Map<String, Object> data = new HashMap<>();
-        data.put("provider", e.getProvider());
-        data.put("model", e.getModel());
-        data.put("mock", e.getMockMode());
-        data.put("ok", true);
-        return R.ok(data);
+        return R.ok(aiConfigService.testConnection(e));
     }
 }
