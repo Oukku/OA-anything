@@ -34,14 +34,6 @@ class DocumentListResponse(BaseModel):
 
 # ===== 查询 =====
 
-class QueryRequest(BaseModel):
-    question: str = Field(..., min_length=1, max_length=2000)
-    mode: Literal["hybrid", "local", "global", "naive"] = "hybrid"
-    kb_id: str = Field("default", description="知识库 ID")
-    vlm_enhanced: Optional[bool] = None
-    top_k: int = 10
-
-
 class QuerySource(BaseModel):
     """检索到的来源。"""
     type: Literal["text", "image", "table", "equation"]
@@ -49,6 +41,17 @@ class QuerySource(BaseModel):
     doc_id: str
     page_idx: Optional[int] = None
     score: float = 0.0
+
+
+class QueryRequest(BaseModel):
+    question: str = Field(..., min_length=1, max_length=2000)
+    mode: Literal["hybrid", "local", "global", "naive"] = "hybrid"
+    kb_id: str = Field("default", description="知识库 ID")
+    doc_ids: Optional[List[str]] = Field(default=None, description="限定检索的文档 ID 列表")
+    vlm_enhanced: Optional[bool] = None
+    top_k: int = 10
+    temperature: float = 0.7
+    max_tokens: int = 2048
 
 
 class QueryResponse(BaseModel):
@@ -81,6 +84,26 @@ class KnowledgeBaseRebuildResponse(BaseModel):
     kb_id: str
     status: Literal["rebuilding", "completed", "failed"]
     message: str = ""
+
+
+# ===== 知识图谱 =====
+
+class GraphNode(BaseModel):
+    id: str
+    label: str
+    type: str = "entity"
+    size: int = 20
+
+
+class GraphEdge(BaseModel):
+    source: str
+    target: str
+    label: str = "关联"
+
+
+class GraphData(BaseModel):
+    nodes: List[GraphNode]
+    edges: List[GraphEdge]
 
 
 # ===== 通用 =====

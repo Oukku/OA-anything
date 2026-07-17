@@ -696,4 +696,109 @@ INSERT INTO `config` (`name`, `value`) VALUES
 ('picture1', 'http://localhost:8080/springboot-oa-v2/static/upload/picture1.jpg'),
 ('picture2', 'http://localhost:8080/springboot-oa-v2/static/upload/picture2.jpg');
 
+-- ==========================================================
+-- 4. AI 中心：知识库 + 会话 + 配置（生产级）
+-- ==========================================================
+
+-- 4.1 知识库分类表
+DROP TABLE IF EXISTS `kb`;
+CREATE TABLE `kb` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '知识库ID',
+  `name` varchar(100) NOT NULL COMMENT '知识库名称',
+  `code` varchar(50) DEFAULT NULL COMMENT '唯一编码',
+  `description` varchar(500) DEFAULT NULL COMMENT '描述',
+  `status` tinyint(4) DEFAULT 1 COMMENT '1=启用 0=禁用',
+  `del_flag` tinyint(4) DEFAULT 0 COMMENT '1=删除 0=正常',
+  `create_by` bigint(20) DEFAULT NULL,
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  `update_by` bigint(20) DEFAULT NULL,
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_kb_code` (`code`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='知识库分类表';
+
+-- 4.2 知识库文档表
+DROP TABLE IF EXISTS `kb_document`;
+CREATE TABLE `kb_document` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `kb_id` bigint(20) NOT NULL COMMENT '所属知识库',
+  `filename` varchar(255) NOT NULL COMMENT '原始文件名',
+  `storage_path` varchar(500) DEFAULT NULL COMMENT '本地存储路径',
+  `rag_doc_id` varchar(100) DEFAULT NULL COMMENT 'RAG-Anything 内部文档ID',
+  `file_size` bigint(20) DEFAULT 0 COMMENT '文件大小字节',
+  `file_type` varchar(50) DEFAULT NULL COMMENT '文件后缀',
+  `status` tinyint(4) DEFAULT 1 COMMENT '1=已索引 0=处理中 -1=失败',
+  `error_msg` varchar(1000) DEFAULT NULL,
+  `del_flag` tinyint(4) DEFAULT 0,
+  `create_by` bigint(20) DEFAULT NULL,
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_kb_id` (`kb_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_rag_doc_id` (`rag_doc_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='知识库文档表';
+
+-- 4.3 AI 会话表
+DROP TABLE IF EXISTS `kb_session`;
+CREATE TABLE `kb_session` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(20) NOT NULL COMMENT '用户ID',
+  `kb_id` bigint(20) DEFAULT NULL COMMENT '关联知识库分类',
+  `title` varchar(200) DEFAULT '新会话' COMMENT '会话标题',
+  `status` tinyint(4) DEFAULT 1 COMMENT '1=正常 0=归档',
+  `del_flag` tinyint(4) DEFAULT 0,
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_kb_id` (`kb_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI 会话表';
+
+-- 4.4 AI 消息表
+DROP TABLE IF EXISTS `kb_message`;
+CREATE TABLE `kb_message` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `session_id` bigint(20) NOT NULL COMMENT '所属会话',
+  `role` varchar(20) NOT NULL COMMENT 'user/bot/system',
+  `content` longtext NOT NULL,
+  `mode` varchar(20) DEFAULT 'hybrid' COMMENT 'hybrid/local/global',
+  `duration_ms` int(11) DEFAULT 0,
+  `sources` json DEFAULT NULL COMMENT '引用来源文档ID列表',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_session_id` (`session_id`),
+  KEY `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI 消息表';
+
+-- 4.5 AI 配置表（全局配置，生产级 api_key 加密）
+DROP TABLE IF EXISTS `ai_config`;
+CREATE TABLE `ai_config` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `provider` varchar(50) DEFAULT 'openai' COMMENT 'openai/custom/minimax/ollama',
+  `base_url` varchar(255) DEFAULT 'https://api.openai.com/v1' COMMENT 'API 基础地址',
+  `model` varchar(100) DEFAULT 'gpt-3.5-turbo',
+  `api_key` varchar(500) DEFAULT NULL COMMENT 'AES 加密后的 API Key',
+  `temperature` decimal(3,2) DEFAULT 0.70 COMMENT '温度 0-2',
+  `max_tokens` int(11) DEFAULT 2048,
+  `top_k` int(11) DEFAULT 5 COMMENT '检索 Top-K',
+  `mock_mode` tinyint(4) DEFAULT 0 COMMENT '1=MOCK 模式',
+  `is_default` tinyint(4) DEFAULT 1 COMMENT '1=默认配置',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_is_default` (`is_default`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI 配置表';
+
+-- 初始化默认 AI 配置（MOCK 模式，避免无 Key 启动失败）
+INSERT INTO `ai_config` (`provider`, `base_url`, `model`, `api_key`, `temperature`, `max_tokens`, `top_k`, `mock_mode`, `is_default`) VALUES
+('mock', '', 'mock-llm', NULL, 0.70, 2048, 5, 1, 1);
+
+-- 初始化示例知识库
+INSERT INTO `kb` (`name`, `code`, `description`) VALUES
+('公司制度', 'company_policy', '员工手册、考勤、报销等公司规章制度'),
+('合同模板', 'contract_template', '各类合同、协议模板'),
+('技术文档', 'tech_doc', '产品技术文档、API 文档、开发规范');
+
 SET FOREIGN_KEY_CHECKS = 1;

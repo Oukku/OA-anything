@@ -30,9 +30,17 @@ async def query(
         if body.vlm_enhanced is not None:
             kwargs["vlm_enhanced"] = body.vlm_enhanced
 
+        # 生产级：多层动态召回 - 先按 doc_ids 做第一层过滤，再做语义检索
+        query_kwargs = {
+            "mode": body.mode,
+            "top_k": body.top_k or 10,
+        }
+        if body.doc_ids:
+            # 限定在指定文档集合内检索（RAG-Anything/LightRAG 支持 context 过滤）
+            query_kwargs["doc_ids"] = body.doc_ids
         answer = await engine.query(
             body.question,
-            mode=body.mode,
+            **query_kwargs,
             **kwargs,
         )
     except Exception as e:

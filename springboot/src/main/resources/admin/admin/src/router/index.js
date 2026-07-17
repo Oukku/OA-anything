@@ -17,7 +17,18 @@ const routes = [
       { path: 'gonggao', name: 'Gonggao', component: () => import('@/views/modules/gonggao/list.vue'), meta: { title: '公告管理' } },
       { path: 'wenjian', name: 'Wenjian', component: () => import('@/views/modules/wenjian/list.vue'), meta: { title: '文件管理' } },
       { path: 'gongzuorizhi', name: 'Gongzuorizhi', component: () => import('@/views/modules/gongzuorizhi/list.vue'), meta: { title: '工作日志' } },
-      { path: 'rag/chat', name: 'RagChat', component: () => import('@/views/modules/rag/chat.vue'), meta: { title: 'AI 知识库问答' } }
+      {
+        path: 'ai',
+        component: () => import('@/views/modules/ai/layout.vue'),
+        redirect: '/ai/chat',
+        meta: { title: 'AI 中心' },
+        children: [
+          { path: 'chat', name: 'AiChat', component: () => import('@/views/modules/ai/chat.vue'), meta: { title: 'AI 对话' } },
+          { path: 'kb', name: 'AiKb', component: () => import('@/views/modules/ai/kb.vue'), meta: { title: '知识库管理' } },
+          { path: 'graph', name: 'AiGraph', component: () => import('@/views/modules/ai/graph.vue'), meta: { title: '知识图谱' } },
+          { path: 'config', name: 'AiConfig', component: () => import('@/views/modules/ai/config.vue'), meta: { title: 'AI 配置' } }
+        ]
+      }
     ]
   },
   { path: '/404', name: 'NotFound', component: () => import('@/views/404.vue') },

@@ -55,6 +55,11 @@ public class RagClient {
 
     /** 上传文档。 */
     public RagDocumentInfo uploadDocument(String filename, byte[] content) {
+        return uploadDocument(filename, content, "default");
+    }
+
+    /** 上传文档到指定知识库。 */
+    public RagDocumentInfo uploadDocument(String filename, byte[] content, String kbId) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
@@ -67,6 +72,7 @@ public class RagClient {
 
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("file", resource);
+        body.add("kb_id", kbId);
 
         HttpEntity<MultiValueMap<String, Object>> req = new HttpEntity<>(body, headers);
         try {
@@ -96,9 +102,17 @@ public class RagClient {
 
     /** 列出已索引文档。 */
     public List<RagDocumentInfo> listDocuments() {
+        return listDocuments(null);
+    }
+
+    /** 列出指定知识库已索引文档。 */
+    public List<RagDocumentInfo> listDocuments(String kbId) {
         try {
-            ResponseEntity<Map> r = restTemplate.getForEntity(
-                props.getServiceUrl() + "/api/v1/documents", Map.class);
+            String url = props.getServiceUrl() + "/api/v1/documents";
+            if (kbId != null && !kbId.isEmpty()) {
+                url += "?kb_id=" + kbId;
+            }
+            ResponseEntity<Map> r = restTemplate.getForEntity(url, Map.class);
             if (r.getBody() == null) return List.of();
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> items = (List<Map<String, Object>>) r.getBody().get("items");
@@ -115,6 +129,18 @@ public class RagClient {
             restTemplate.delete(props.getServiceUrl() + "/api/v1/documents/" + docId);
         } catch (Exception e) {
             log.warn("RAG delete failed: {}", e.getMessage());
+        }
+    }
+
+    /** 获取文档知识图谱。 */
+    public Map<String, Object> getGraph(String docId) {
+        try {
+            ResponseEntity<Map> r = restTemplate.getForEntity(
+                props.getServiceUrl() + "/api/v1/graph/" + docId, Map.class);
+            return r.getBody() != null ? r.getBody() : Map.of();
+        } catch (Exception e) {
+            log.warn("RAG getGraph failed: {}", e.getMessage());
+            return Map.of();
         }
     }
 }

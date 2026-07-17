@@ -13,8 +13,12 @@ public class RagQueryRequest {
     /** hybrid | local | global | naive */
     private String mode = "hybrid";
     private String kbId = "default";
+    private List<String> docIds;
     private Boolean vlmEnhanced;
     private Integer topK = 10;
+    private Double temperature = 0.7;
+    private Integer maxTokens = 2048;
+    private Long sessionId;
     /** 多模态内容 - 可选 */
     private List<Map<String, Object>> multimodalContent;
 }

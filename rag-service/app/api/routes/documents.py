@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 
 from app.config import settings
 from app.core.rag_engine import RagEngine, get_engine
@@ -36,9 +36,10 @@ _ALLOWED_EXTS = {
 )
 async def upload_document(
     file: UploadFile = File(..., description="要索引的文档"),
+    kb_id: str = Form("default", description="目标知识库 ID"),
     engine: RagEngine = Depends(get_engine),
 ) -> DocumentUploadResponse:
-    """上传并索引一个文档到默认知识库。"""
+    """上传并索引一个文档到指定知识库。"""
     if not file.filename:
         raise HTTPException(status_code=400, detail="filename is required")
 
@@ -50,7 +51,9 @@ async def upload_document(
         )
 
     doc_id = uuid.uuid4().hex
-    dest = settings.upload_dir_path / f"{doc_id}{ext}"
+    kb_dir = settings.upload_dir_path / (kb_id or "default")
+    kb_dir.mkdir(parents=True, exist_ok=True)
+    dest = kb_dir / f"{doc_id}{ext}"
 
     size = 0
     with dest.open("wb") as out:
@@ -83,6 +86,8 @@ async def upload_document(
         dest.unlink(missing_ok=True)
         raise HTTPException(status_code=500, detail=f"indexing failed: {e}")
 
+    engine._indexed_files[doc_id]["kb_id"] = kb_id or "default"
+
     return DocumentUploadResponse(
         id=doc_id,
         filename=file.filename,
@@ -95,18 +100,23 @@ async def upload_document(
 
 @router.get("", response_model=DocumentListResponse)
 async def list_documents(
+    kb_id: str = Query(None, description="按知识库过滤"),
     engine: RagEngine = Depends(get_engine),
 ) -> DocumentListResponse:
     items: List[DocumentInfo] = []
     for doc_id, meta in engine._indexed_files.items():
+        doc_kb_id = meta.get("kb_id", "default")
+        if kb_id and doc_kb_id != kb_id:
+            continue
+        p = Path(meta["file_path"])
         items.append(DocumentInfo(
             id=doc_id,
-            filename=Path(meta["file_path"]).name,
-            size_bytes=Path(meta["file_path"]).stat().st_size if Path(meta["file_path"]).exists() else 0,
+            filename=p.name,
+            size_bytes=p.stat().st_size if p.exists() else 0,
             status=meta.get("status", "indexed"),
-            kb_id="default",
-            uploaded_at=datetime.fromtimestamp(Path(meta["file_path"]).stat().st_mtime)
-                if Path(meta["file_path"]).exists() else datetime.utcnow(),
+            kb_id=doc_kb_id,
+            uploaded_at=datetime.fromtimestamp(p.stat().st_mtime)
+                if p.exists() else datetime.utcnow(),
         ))
     return DocumentListResponse(total=len(items), items=items)
 

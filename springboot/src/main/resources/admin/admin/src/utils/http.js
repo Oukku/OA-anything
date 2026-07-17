@@ -26,6 +26,13 @@ http.interceptors.response.use(
     return data
   },
   err => {
+    if (err.response && err.response.status === 401) {
+      Message.error('登录已过期，请重新登录')
+      localStorage.removeItem('token')
+      localStorage.removeItem('userInfo')
+      router.push('/login')
+      return Promise.reject(new Error('未登录'))
+    }
     Message.error(err.message || '请求失败')
     return Promise.reject(err)
   }

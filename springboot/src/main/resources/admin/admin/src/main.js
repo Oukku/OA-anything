@@ -6,10 +6,12 @@ import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
 import './assets/main.css'
 import http from './utils/http'
+import cytoscape from 'cytoscape'
 
 Vue.use(ElementUI, { size: 'small' })
 Vue.config.productionTip = false
 Vue.prototype.$http = http
+if (typeof window !== 'undefined') window.cytoscape = cytoscape
 
 new Vue({
   router,

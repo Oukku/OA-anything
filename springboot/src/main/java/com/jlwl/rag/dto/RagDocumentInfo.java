@@ -14,4 +14,7 @@ public class RagDocumentInfo {
     private String status;
     private String kbId;
     private LocalDateTime uploadedAt;
+    private Integer pageCount;
+    private Integer chunkCount;
+    private Integer entityCount;
 }

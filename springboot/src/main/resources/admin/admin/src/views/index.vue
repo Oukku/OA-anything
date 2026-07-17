@@ -17,7 +17,13 @@
         <el-menu-item index="/gonggao"><i class="el-icon-bell"></i><span>公告管理</span></el-menu-item>
         <el-menu-item index="/wenjian"><i class="el-icon-folder"></i><span>文件管理</span></el-menu-item>
         <el-menu-item index="/gongzuorizhi"><i class="el-icon-document"></i><span>工作日志</span></el-menu-item>
-        <el-menu-item index="/rag/chat"><i class="el-icon-chat-dot-square"></i><span>AI 知识库</span></el-menu-item>
+        <el-submenu index="/ai">
+          <template slot="title"><i class="el-icon-cpu"></i><span>AI 中心</span></template>
+          <el-menu-item index="/ai/chat"><i class="el-icon-chat-dot-square"></i><span>AI 对话</span></el-menu-item>
+          <el-menu-item index="/ai/kb"><i class="el-icon-collection"></i><span>知识库管理</span></el-menu-item>
+          <el-menu-item index="/ai/graph"><i class="el-icon-share"></i><span>知识图谱</span></el-menu-item>
+          <el-menu-item index="/ai/config"><i class="el-icon-setting"></i><span>AI 配置</span></el-menu-item>
+        </el-submenu>
       </el-menu>
     </el-aside>
     <el-container>
