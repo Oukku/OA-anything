@@ -1,6 +1,7 @@
 package com.jlwl.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -17,5 +18,6 @@ public class UsersEntity {
     private String role;
     private LocalDateTime addtime;
     @TableLogic
+    @TableField("del_flag")
     private Integer delFlag;
 }

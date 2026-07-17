@@ -1,6 +1,9 @@
 package com.jlwl.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.jlwl.dao.TokenDao;
 import com.jlwl.dao.UsersDao;
 import com.jlwl.entity.TokenEntity;
@@ -57,5 +60,27 @@ public class UsersService {
                 .gt("expire_time", LocalDateTime.now())
         );
         return list.isEmpty() ? null : list.get(0);
+    }
+
+    public IPage<UsersEntity> page(int page, int limit, String username) {
+        QueryWrapper<UsersEntity> qw = new QueryWrapper<>();
+        if (username != null && !username.isEmpty()) qw.like("username", username);
+        qw.eq("del_flag", 0).orderByDesc("id");
+        return usersDao.selectPage(new Page<>(page, limit), qw);
+    }
+
+    public UsersEntity get(Long id) {
+        return usersDao.selectById(id);
+    }
+
+    public boolean save(UsersEntity u) {
+        if (u.getId() == null) return usersDao.insert(u) > 0;
+        return usersDao.updateById(u) > 0;
+    }
+
+    public boolean delete(Long id) {
+        return usersDao.update(null,
+            new UpdateWrapper<UsersEntity>().eq("id", id).set("del_flag", 1)
+        ) > 0;
     }
 }

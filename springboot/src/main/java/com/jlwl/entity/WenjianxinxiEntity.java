@@ -1,9 +1,6 @@
 package com.jlwl.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableLogic;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import java.time.LocalDateTime;
 
@@ -12,19 +9,25 @@ import java.time.LocalDateTime;
 public class WenjianxinxiEntity {
     @TableId(type = IdType.AUTO)
     private Long id;
+    @TableField("biaoti")
     private String name;
+    @TableField("fujian")
     private String url;
-    private String fileType;
-    private Long fileSize;
-    private Long folderId;
-    private String tags;
+    @TableField("wenjianneirong")
     private String description;
-    private Integer accessLevel;
-    private Integer status;
+    @TableField("fabushijian")
+    private LocalDateTime fabuTime;
+    @TableField("addtime")
+    private LocalDateTime addtime;
     @TableLogic
+    @TableField("del_flag")
     private Integer delFlag;
+    @TableField(exist = false)
     private Long createBy;
+    @TableField(exist = false)
     private LocalDateTime createTime;
+    @TableField(exist = false)
     private Long updateBy;
+    @TableField(exist = false)
     private LocalDateTime updateTime;
 }

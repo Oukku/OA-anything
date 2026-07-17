@@ -2,6 +2,7 @@ package com.jlwl.controller;
 
 import com.jlwl.common.R;
 import com.jlwl.entity.TokenEntity;
+import com.jlwl.entity.UsersEntity;
 import com.jlwl.service.UsersService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -56,5 +57,49 @@ public class UsersController {
         data.put("username", req.getAttribute("currentUsername"));
         data.put("userType", req.getAttribute("currentUserType"));
         return R.ok(data);
+    }
+
+    @GetMapping("/page")
+    public R<Map<String, Object>> page(
+        @RequestParam(defaultValue = "1") int page,
+        @RequestParam(defaultValue = "10") int limit,
+        @RequestParam(required = false) String username
+    ) {
+        var p = usersService.page(page, limit, username);
+        Map<String, Object> data = new HashMap<>();
+        data.put("list", p.getRecords());
+        data.put("total", p.getTotal());
+        data.put("size", p.getSize());
+        data.put("current", p.getCurrent());
+        return R.ok(data);
+    }
+
+    @GetMapping("/info/{id}")
+    public R<UsersEntity> infoById(@PathVariable Long id) {
+        return R.ok(usersService.get(id));
+    }
+
+    @PostMapping("/save")
+    public R<Boolean> save(@RequestBody UsersEntity u) {
+        return R.ok(usersService.save(u));
+    }
+
+    @PostMapping("/update")
+    public R<Boolean> update(@RequestBody UsersEntity u) {
+        return R.ok(usersService.save(u));
+    }
+
+    @DeleteMapping("/delete/{id}")
+    public R<Boolean> delete(@PathVariable Long id) {
+        return R.ok(usersService.delete(id));
+    }
+
+    @DeleteMapping("/delete")
+    public R<Boolean> deleteBatch(@RequestParam String ids) {
+        boolean ok = true;
+        for (String s : ids.split(",")) {
+            ok = usersService.delete(Long.parseLong(s.trim())) && ok;
+        }
+        return R.ok(ok);
     }
 }

@@ -156,6 +156,9 @@
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>false</filtering>
+                <excludes>
+                    <exclude>admin/**</exclude>
+                </excludes>
             </resource>
         </resources>
     </build>

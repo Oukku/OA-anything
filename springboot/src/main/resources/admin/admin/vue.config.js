@@ -9,6 +9,7 @@ module.exports = defineConfig({
     port: 8081,
     host: '0.0.0.0',
     open: false,
+    historyApiFallback: true,
     proxy: {
       '/springboot-oa-v2': {
         target: 'http://localhost:8080',

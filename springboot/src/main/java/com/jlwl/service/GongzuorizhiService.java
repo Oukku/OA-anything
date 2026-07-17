@@ -16,11 +16,10 @@ public class GongzuorizhiService {
 
     public IPage<GongzuorizhiEntity> page(int current, int size, String keyword, Long userId) {
         QueryWrapper<GongzuorizhiEntity> qw = new QueryWrapper<>();
-        if (userId != null) qw.eq("user_id", userId);
         if (keyword != null && !keyword.isEmpty()) {
-            qw.and(w -> w.like("title", keyword).or().like("content", keyword));
+            qw.and(w -> w.like("biaoti", keyword).or().like("gongzuoneirong", keyword));
         }
-        qw.orderByDesc("rizhi_date");
+        qw.orderByDesc("addtime");
         return dao.selectPage(new Page<>(current, size), qw);
     }
 

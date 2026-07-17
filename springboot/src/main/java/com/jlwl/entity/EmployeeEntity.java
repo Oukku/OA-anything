@@ -37,6 +37,7 @@ public class EmployeeEntity {
     private Integer status;
     private Integer isExternal;
     @TableLogic
+    @TableField("del_flag")
     private Integer delFlag;
     private Long createBy;
     private java.time.LocalDateTime createTime;

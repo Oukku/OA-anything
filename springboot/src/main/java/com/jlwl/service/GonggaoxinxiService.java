@@ -19,20 +19,14 @@ public class GonggaoxinxiService {
     public IPage<GonggaoxinxiEntity> page(int current, int size, String keyword, Integer status) {
         QueryWrapper<GonggaoxinxiEntity> qw = new QueryWrapper<>();
         if (keyword != null && !keyword.isEmpty()) {
-            qw.and(w -> w.like("title", keyword).or().like("content", keyword));
+            qw.and(w -> w.like("biaoti", keyword).or().like("gonggaoneirong", keyword));
         }
-        if (status != null) qw.eq("status", status);
-        qw.orderByDesc("top_flag").orderByDesc("fabu_time");
+        qw.orderByDesc("addtime");
         return dao.selectPage(new Page<>(current, size), qw);
     }
 
     public GonggaoxinxiEntity get(Long id) {
-        GonggaoxinxiEntity e = dao.selectById(id);
-        if (e != null) {
-            e.setViewCount((e.getViewCount() == null ? 0 : e.getViewCount()) + 1);
-            dao.updateById(e);
-        }
-        return e;
+        return dao.selectById(id);
     }
 
     public boolean save(GonggaoxinxiEntity e) {

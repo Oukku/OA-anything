@@ -1,9 +1,6 @@
 package com.jlwl.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableLogic;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -13,17 +10,25 @@ import java.time.LocalDateTime;
 public class GongzuorizhiEntity {
     @TableId(type = IdType.AUTO)
     private Long id;
-    private Long userId;
+    @TableField("yonghuming")
     private String username;
+    @TableField("dengjishijian")
     private LocalDate rizhiDate;
+    @TableField("biaoti")
     private String title;
+    @TableField("gongzuoneirong")
     private String content;
-    private String tags;
-    private Integer status;
+    @TableField("addtime")
+    private LocalDateTime addtime;
     @TableLogic
+    @TableField("del_flag")
     private Integer delFlag;
+    @TableField(exist = false)
     private Long createBy;
+    @TableField(exist = false)
     private LocalDateTime createTime;
+    @TableField(exist = false)
     private Long updateBy;
+    @TableField(exist = false)
     private LocalDateTime updateTime;
 }

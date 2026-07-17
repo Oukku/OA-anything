@@ -17,10 +17,9 @@ public class WenjianxinxiService {
     public IPage<WenjianxinxiEntity> page(int current, int size, String keyword, Long folderId) {
         QueryWrapper<WenjianxinxiEntity> qw = new QueryWrapper<>();
         if (keyword != null && !keyword.isEmpty()) {
-            qw.and(w -> w.like("name", keyword).or().like("description", keyword).or().like("tags", keyword));
+            qw.and(w -> w.like("biaoti", keyword).or().like("wenjianneirong", keyword));
         }
-        if (folderId != null) qw.eq("folder_id", folderId);
-        qw.orderByDesc("create_time");
+        qw.orderByDesc("addtime");
         return dao.selectPage(new Page<>(current, size), qw);
     }
 
