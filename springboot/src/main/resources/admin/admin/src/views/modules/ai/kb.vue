@@ -369,30 +369,26 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-$primary: #4a90e2;
-
 .ai-kb { padding: 0; }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 21, 41, 0.06);
+  background: #fff;
+  border: 1px solid var(--biz-border);
+  border-radius: 6px;
+  box-shadow: var(--biz-shadow);
   overflow: hidden;
 }
 
 .panel-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 18px;
-  border-bottom: 1px solid rgba(0, 21, 41, 0.05);
-  background: rgba(255, 255, 255, 0.4);
+  border-bottom: 1px solid var(--biz-border);
+  background: #f8fafc;
 }
 .panel-title {
   display: flex; align-items: center; gap: 8px;
-  font-size: 14px; font-weight: 600; color: #1f2d3d;
-  i { color: $primary; font-size: 16px; }
+  font-size: 14px; font-weight: 600; color: var(--biz-text-1);
+  i { color: var(--biz-primary); font-size: 16px; }
 }
 .panel-body { padding: 12px; }
 
@@ -400,41 +396,40 @@ $primary: #4a90e2;
 .kb-item {
   display: flex; align-items: center; gap: 10px;
   padding: 12px;
-  border-radius: 8px;
+  border-radius: 4px;
   cursor: pointer;
   margin-bottom: 4px;
   transition: all .2s;
   border: 1px solid transparent;
-  &:hover { background: rgba(74, 144, 226, 0.06); border-color: rgba(74, 144, 226, 0.12); }
+  &:hover { background: #f8fafc; border-color: var(--biz-border); }
   &.active {
-    background: linear-gradient(90deg, rgba(74,144,226,0.18) 0%, rgba(74,144,226,0.04) 100%);
-    border-color: rgba(74, 144, 226, 0.3);
-    box-shadow: inset 3px 0 0 $primary;
+    background: rgba(30, 64, 175, 0.06);
+    border-color: rgba(30, 64, 175, 0.2);
+    box-shadow: inset 3px 0 0 var(--biz-primary);
   }
   .kb-icon {
-    width: 34px; height: 34px;
-    border-radius: 8px;
-    background: linear-gradient(135deg, rgba(74,144,226,0.18) 0%, rgba(74,144,226,0.04) 100%);
+    width: 32px; height: 32px;
+    border-radius: 4px;
+    background: rgba(30, 64, 175, 0.08);
     display: flex; align-items: center; justify-content: center;
-    color: $primary; font-size: 16px;
+    color: var(--biz-primary); font-size: 15px;
     flex-shrink: 0;
   }
   &.active .kb-icon {
-    background: linear-gradient(135deg, #4a90e2 0%, #2b7bc4 100%);
+    background: var(--biz-primary);
     color: #fff;
-    box-shadow: 0 2px 6px rgba(74,144,226,0.32);
   }
   .kb-info { flex: 1; min-width: 0; }
-  .kb-name { font-size: 14px; font-weight: 500; color: #1f2d3d; }
+  .kb-name { font-size: 14px; font-weight: 500; color: var(--biz-text-1); }
   .kb-desc {
-    font-size: 12px; color: #909399; margin-top: 4px;
+    font-size: 12px; color: var(--biz-text-4); margin-top: 4px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .kb-more {
-    padding: 4px 6px; border-radius: 6px;
-    color: #909399; opacity: 0;
+    padding: 4px 6px; border-radius: 4px;
+    color: var(--biz-text-4); opacity: 0;
     transition: opacity .2s, background .2s;
-    &:hover { background: rgba(0,0,0,0.06); }
+    &:hover { background: rgba(15,23,42,0.06); }
   }
   &:hover .kb-more { opacity: 1; }
 }
@@ -444,18 +439,18 @@ $primary: #4a90e2;
 /* Doc table */
 .doc-name {
   display: flex; align-items: center; gap: 6px;
-  i { color: $primary; font-size: 14px; }
+  i { color: var(--biz-primary); font-size: 14px; }
 }
-.doc-size { color: #909399; font-size: 12px; }
-.doc-meta { color: #606266; font-size: 12px; }
+.doc-size { color: var(--biz-text-4); font-size: 12px; }
+.doc-meta { color: var(--biz-text-3); font-size: 12px; }
 .doc-status {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 2px 8px;
-  border-radius: 12px;
+  border-radius: 10px;
   font-size: 12px;
-  &.status-ok { background: rgba(103, 194, 58, 0.12); color: #67c23a; }
-  &.status-err { background: rgba(245, 108, 108, 0.12); color: #f56c6c; }
-  &.status-wait { background: rgba(230, 162, 60, 0.12); color: #e6a23c; }
+  &.status-ok { background: rgba(22, 163, 74, 0.1); color: #15803d; }
+  &.status-err { background: rgba(220, 38, 38, 0.1); color: #b91c1c; }
+  &.status-wait { background: rgba(217, 119, 6, 0.1); color: #b45309; }
 }
 
 .empty-state {
@@ -472,13 +467,13 @@ $primary: #4a90e2;
   display: flex; flex-wrap: wrap; gap: 16px;
   padding: 10px 14px;
   margin-bottom: 12px;
-  background: rgba(74, 144, 226, 0.06);
-  border-radius: 8px;
-  border: 1px solid rgba(74, 144, 226, 0.12);
+  background: #f8fafc;
+  border-radius: 4px;
+  border: 1px solid var(--biz-border);
   .meta-item {
     display: inline-flex; align-items: center; gap: 6px;
-    font-size: 13px; color: #606266;
-    i { color: $primary; font-size: 14px; }
+    font-size: 13px; color: var(--biz-text-3);
+    i { color: var(--biz-primary); font-size: 14px; }
   }
 }
 .preview-section {
@@ -486,11 +481,11 @@ $primary: #4a90e2;
   height: 60vh;
 }
 .preview-section-title {
-  font-size: 13px; font-weight: 600; color: #1f2d3d;
+  font-size: 13px; font-weight: 600; color: var(--biz-text-1);
   padding: 8px 12px;
-  border-bottom: 1px solid rgba(0, 21, 41, 0.06);
-  background: rgba(255, 255, 255, 0.5);
-  border-radius: 8px 8px 0 0;
+  border-bottom: 1px solid var(--biz-border);
+  background: #f8fafc;
+  border-radius: 4px 4px 0 0;
 }
 .preview-text {
   flex: 1;
@@ -499,35 +494,35 @@ $primary: #4a90e2;
   font-family: 'Consolas', 'Monaco', monospace;
   font-size: 13px;
   line-height: 1.7;
-  color: #303133;
+  color: var(--biz-text-2);
   white-space: pre-wrap;
   word-break: break-word;
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(0, 21, 41, 0.06);
+  background: #fff;
+  border: 1px solid var(--biz-border);
   border-top: none;
-  border-radius: 0 0 8px 8px;
+  border-radius: 0 0 4px 4px;
 }
 .preview-chunks {
   flex: 1;
   overflow-y: auto;
   padding: 8px;
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(0, 21, 41, 0.06);
+  background: #fff;
+  border: 1px solid var(--biz-border);
   border-top: none;
-  border-radius: 0 0 8px 8px;
+  border-radius: 0 0 4px 4px;
 }
 .chunk-item {
   padding: 10px 12px;
   margin-bottom: 8px;
-  background: rgba(74, 144, 226, 0.04);
-  border-left: 3px solid rgba(74, 144, 226, 0.4);
+  background: #f8fafc;
+  border-left: 3px solid var(--biz-primary);
   border-radius: 4px;
   .chunk-head {
-    font-size: 12px; font-weight: 600; color: $primary;
+    font-size: 12px; font-weight: 600; color: var(--biz-primary);
     margin-bottom: 4px;
   }
   .chunk-text {
-    font-size: 12px; color: #606266;
+    font-size: 12px; color: var(--biz-text-3);
     line-height: 1.6;
   }
 }

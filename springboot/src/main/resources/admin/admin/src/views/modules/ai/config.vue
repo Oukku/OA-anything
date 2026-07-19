@@ -286,12 +286,10 @@ export default {
 .ai-config { padding: 0; }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 10px;
-  box-shadow: 0 2px 12px rgba(0, 21, 41, 0.06);
+  background: #fff;
+  border: 1px solid var(--biz-border);
+  border-radius: 6px;
+  box-shadow: var(--biz-shadow);
 }
 
 .config-header {
@@ -304,21 +302,21 @@ export default {
   .config-header-title {
     font-size: 16px;
     font-weight: 600;
-    color: #303133;
-    i { margin-right: 8px; color: #409eff; }
+    color: var(--biz-text-1);
+    i { margin-right: 8px; color: var(--biz-primary); }
   }
   .config-header-desc {
     flex: 1;
     margin-left: 24px;
     font-size: 13px;
-    color: #909399;
+    color: var(--biz-text-3);
   }
   .config-header-switch {
     display: flex;
     align-items: center;
     gap: 8px;
     font-size: 13px;
-    color: #606266;
+    color: var(--biz-text-2);
   }
 }
 
@@ -331,10 +329,10 @@ export default {
     gap: 8px;
     margin-bottom: 16px;
     padding-bottom: 12px;
-    border-bottom: 1px solid rgba(0, 21, 41, 0.06);
+    border-bottom: 1px solid var(--biz-border);
 
-    i { font-size: 18px; color: #409eff; }
-    span { font-size: 14px; font-weight: 600; color: #303133; flex: 1; }
+    i { font-size: 18px; color: var(--biz-primary); }
+    span { font-size: 14px; font-weight: 600; color: var(--biz-text-1); flex: 1; }
   }
 }
 
@@ -350,7 +348,7 @@ export default {
     display: flex;
     flex-direction: column;
     font-size: 12px;
-    color: #909399;
+    color: var(--biz-text-3);
     line-height: 1.8;
   }
 }
@@ -361,12 +359,12 @@ export default {
 
   .prompt-desc {
     font-size: 12px;
-    color: #909399;
+    color: var(--biz-text-3);
     line-height: 1.7;
     margin-bottom: 10px;
     code {
-      background: rgba(74, 144, 226, 0.1);
-      color: #4a90e2;
+      background: rgba(30, 64, 175, 0.08);
+      color: var(--biz-primary);
       padding: 1px 6px;
       border-radius: 3px;
       font-family: 'Consolas', 'Monaco', monospace;

@@ -8,8 +8,8 @@
       <el-menu
         :default-active="$route.path"
         background-color="transparent"
-        text-color="rgba(255,255,255,0.82)"
-        active-text-color="#6ec5ff"
+        text-color="rgba(255,255,255,0.78)"
+        active-text-color="#ffffff"
         router
         class="app-menu"
       >
@@ -73,101 +73,99 @@ export default {
 <style scoped>
 .app-shell {
   height: 100vh;
-  background: linear-gradient(135deg, #eef3f8 0%, #dde9f3 100%);
+  background: var(--biz-bg);
 }
 
-/* ===== Sidebar (深色玻璃) ===== */
+/* ===== Sidebar (藏青商务风) ===== */
 .app-aside {
-  background: rgba(0, 21, 41, 0.78);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  background: #1e3a5f;
+  border-right: 1px solid #0f2540;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 .app-logo {
-  height: 60px;
+  height: 56px;
   display: flex; align-items: center; gap: 10px;
   padding: 0 18px;
-  font-size: 15px; font-weight: 600;
+  font-size: 14px; font-weight: 600;
   color: #fff;
   letter-spacing: 1px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: linear-gradient(90deg, rgba(74,144,226,0.18) 0%, transparent 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 .app-logo i {
-  font-size: 22px;
-  color: #6ec5ff;
+  font-size: 20px;
+  color: #60a5fa;
 }
 .app-menu {
   flex: 1; overflow-y: auto;
   border-right: none !important;
+  padding: 8px 0;
 }
 .app-menu >>> .el-menu-item,
 .app-menu >>> .el-submenu__title {
-  height: 46px; line-height: 46px;
-  border-radius: 8px;
-  margin: 4px 8px;
-  transition: background .2s;
+  height: 42px; line-height: 42px;
+  margin: 2px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  transition: all .2s;
 }
 .app-menu >>> .el-menu-item:hover,
 .app-menu >>> .el-submenu__title:hover {
-  background: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
 }
 .app-menu >>> .el-menu-item.is-active {
-  background: linear-gradient(90deg, rgba(74,144,226,0.32) 0%, rgba(74,144,226,0.08) 100%) !important;
-  color: #6ec5ff !important;
-  box-shadow: inset 3px 0 0 #6ec5ff;
+  background: var(--biz-primary) !important;
+  color: #fff !important;
+  box-shadow: 0 2px 6px rgba(30, 64, 175, 0.32);
 }
 .app-menu >>> .el-submenu .el-menu-item {
   padding-left: 50px !important;
   background: transparent !important;
 }
 .app-menu >>> .el-submenu .el-menu-item.is-active {
-  background: rgba(74,144,226,0.18) !important;
+  background: var(--biz-primary) !important;
+  color: #fff !important;
 }
 .app-menu::-webkit-scrollbar { width: 4px; }
-.app-menu::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 4px; }
+.app-menu::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
 
-/* ===== Header (浅色玻璃) ===== */
+/* ===== Header (白底商务风) ===== */
 .app-header {
-  height: 56px !important;
+  height: 52px !important;
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 24px;
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.45);
-  box-shadow: 0 2px 10px rgba(0, 21, 41, 0.04);
+  background: #fff;
+  border-bottom: 1px solid var(--biz-border);
 }
 .app-page-title {
   display: flex; align-items: center; gap: 8px;
-  font-size: 16px; font-weight: 500; color: #1f2d3d;
+  font-size: 15px; font-weight: 600; color: var(--biz-text-1);
 }
-.app-page-title i { color: #4a90e2; font-size: 18px; }
+.app-page-title i { color: var(--biz-primary); font-size: 16px; }
 
 .app-user { cursor: pointer; }
 .app-user-inner {
   display: flex; align-items: center; gap: 8px;
-  padding: 6px 10px;
-  border-radius: 20px;
-  background: rgba(74, 144, 226, 0.08);
-  transition: background .2s;
+  padding: 5px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--biz-border);
+  background: #fff;
+  transition: all .2s;
 }
-.app-user-inner:hover { background: rgba(74, 144, 226, 0.16); }
+.app-user-inner:hover { background: #f8fafc; border-color: var(--biz-primary-light); }
 .app-user-avatar {
-  width: 26px; height: 26px;
+  width: 24px; height: 24px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #4a90e2 0%, #2b7bc4 100%);
+  background: var(--biz-primary);
   display: flex; align-items: center; justify-content: center;
-  color: #fff; font-size: 14px;
+  color: #fff; font-size: 13px;
 }
-.app-user-name { font-size: 13px; color: #1f2d3d; }
+.app-user-name { font-size: 13px; color: var(--biz-text-2); }
 
 /* ===== Main 内容区 ===== */
 .app-main {
   padding: 16px;
-  background: transparent;
+  background: var(--biz-bg);
 }
 </style>

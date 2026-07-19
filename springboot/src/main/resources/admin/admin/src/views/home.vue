@@ -38,10 +38,10 @@ export default {
   data() {
     return {
       cards: [
-        { title: '用户总数', value: 0, icon: 'el-icon-user', bg: 'linear-gradient(135deg, #4a90e2 0%, #2b7bc4 100%)' },
-        { title: '员工总数', value: 0, icon: 'el-icon-user-solid', bg: 'linear-gradient(135deg, #67c23a 0%, #4e9c2c 100%)' },
-        { title: '公告数', value: 0, icon: 'el-icon-bell', bg: 'linear-gradient(135deg, #e6a23c 0%, #c4821c 100%)' },
-        { title: '文件数', value: 0, icon: 'el-icon-folder', bg: 'linear-gradient(135deg, #f56c6c 0%, #d04545 100%)' }
+        { title: '用户总数', value: 0, icon: 'el-icon-user', color: '#1e40af' },
+        { title: '员工总数', value: 0, icon: 'el-icon-user-solid', color: '#0891b2' },
+        { title: '公告数', value: 0, icon: 'el-icon-bell', color: '#d97706' },
+        { title: '文件数', value: 0, icon: 'el-icon-folder', color: '#7c3aed' }
       ]
     }
   },
@@ -65,48 +65,45 @@ export default {
 .home-page { padding: 0; }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 21, 41, 0.06);
+  background: #fff;
+  border: 1px solid var(--biz-border);
+  border-radius: 6px;
+  box-shadow: var(--biz-shadow);
 }
 
 .stat-card {
-  padding: 20px;
-  display: flex; align-items: center; gap: 16px;
-  transition: transform .2s, box-shadow .2s;
+  padding: 18px 20px;
+  display: flex; align-items: center; gap: 14px;
+  transition: box-shadow .2s, border-color .2s;
 }
 .stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 21, 41, 0.1);
+  border-color: var(--biz-primary-light);
+  box-shadow: var(--biz-shadow-hover);
 }
 .stat-icon {
-  width: 50px; height: 50px;
-  border-radius: 12px;
+  width: 40px; height: 40px;
+  border-radius: 6px;
   display: flex; align-items: center; justify-content: center;
-  color: #fff; font-size: 22px;
+  color: #fff; font-size: 18px;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(0, 21, 41, 0.12);
 }
 .stat-info { flex: 1; }
-.stat-title { color: #909399; font-size: 13px; margin-bottom: 4px; }
-.stat-value { font-size: 24px; font-weight: 600; color: #1f2d3d; }
+.stat-title { color: var(--biz-text-3); font-size: 12px; margin-bottom: 4px; }
+.stat-value { font-size: 22px; font-weight: 600; color: var(--biz-text-1); }
 
 .welcome-card {
   margin-top: 16px;
-  padding: 24px;
+  padding: 22px 24px;
 }
 .welcome-header {
   display: flex; align-items: center; gap: 8px;
-  font-size: 16px; font-weight: 600; color: #1f2d3d;
-  margin-bottom: 12px;
+  font-size: 15px; font-weight: 600; color: var(--biz-text-1);
+  margin-bottom: 10px;
 }
-.welcome-header i { color: #4a90e2; font-size: 20px; }
+.welcome-header i { color: var(--biz-primary); font-size: 18px; }
 .welcome-text {
-  font-size: 14px; line-height: 1.8; color: #606266;
-  margin: 0 0 18px;
+  font-size: 13px; line-height: 1.8; color: var(--biz-text-3);
+  margin: 0 0 16px;
 }
 .welcome-actions {
   display: flex; gap: 10px;

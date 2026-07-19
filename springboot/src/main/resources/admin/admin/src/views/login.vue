@@ -1,9 +1,5 @@
 <template>
   <div class="login-bg">
-    <div class="login-aurora login-aurora-1"></div>
-    <div class="login-aurora login-aurora-2"></div>
-    <div class="login-aurora login-aurora-3"></div>
-
     <div class="login-glass-card">
       <div class="login-header">
         <div class="login-logo">
@@ -68,104 +64,84 @@ export default {
   width: 100%;
   height: 100vh;
   overflow: hidden;
-  background: linear-gradient(135deg, #0a2540 0%, #0d3b66 35%, #1e5b8a 70%, #2b7bc4 100%);
+  background: #1e3a5f;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.login-aurora {
+/* 极简装饰条 - 不要厚重的极光 */
+.login-bg::before {
+  content: '';
   position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.55;
-  pointer-events: none;
-  z-index: 1;
-}
-.login-aurora-1 {
-  width: 520px; height: 520px;
-  background: radial-gradient(circle, #4a90e2 0%, transparent 70%);
-  top: -120px; left: -80px;
-}
-.login-aurora-2 {
-  width: 460px; height: 460px;
-  background: radial-gradient(circle, #6ec5ff 0%, transparent 70%);
-  bottom: -140px; right: -60px;
-}
-.login-aurora-3 {
-  width: 360px; height: 360px;
-  background: radial-gradient(circle, #2d6da3 0%, transparent 70%);
-  top: 40%; right: 22%;
-  opacity: 0.35;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: var(--biz-primary);
 }
 
 .login-glass-card {
   position: relative;
   z-index: 10;
-  width: 420px;
-  padding: 40px 36px 28px;
-  background: rgba(255, 255, 255, 0.16);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 16px;
-  box-shadow: 0 12px 40px rgba(0, 21, 41, 0.32);
+  width: 400px;
+  padding: 36px 32px 24px;
+  background: #fff;
+  border: 1px solid var(--biz-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
 }
 
 .login-header {
   text-align: center;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 .login-logo {
-  width: 56px; height: 56px;
-  margin: 0 auto 14px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #4a90e2 0%, #2b7bc4 100%);
+  width: 48px; height: 48px;
+  margin: 0 auto 12px;
+  border-radius: 6px;
+  background: var(--biz-primary);
   display: flex; align-items: center; justify-content: center;
-  color: #fff; font-size: 28px;
-  box-shadow: 0 6px 18px rgba(74, 144, 226, 0.45);
+  color: #fff; font-size: 24px;
 }
 .login-title {
-  font-size: 22px; font-weight: 600;
-  color: #fff;
+  font-size: 18px; font-weight: 600;
+  color: var(--biz-text-1);
   letter-spacing: 1px;
 }
 .login-subtitle {
-  margin-top: 6px;
-  font-size: 12px; color: rgba(255, 255, 255, 0.65);
+  margin-top: 4px;
+  font-size: 12px; color: var(--biz-text-3);
   letter-spacing: 0.5px;
 }
 
 .login-form >>> .el-input__inner {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  color: #fff;
-  height: 42px;
-  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid var(--biz-border);
+  color: var(--biz-text-1);
+  height: 40px;
+  border-radius: 4px;
 }
-.login-form >>> .el-input__inner::placeholder { color: rgba(255, 255, 255, 0.55); }
+.login-form >>> .el-input__inner::placeholder { color: var(--biz-text-4); }
 .login-form >>> .el-input__prefix,
-.login-form >>> .el-input__suffix { color: rgba(255, 255, 255, 0.7); }
-.login-form >>> .el-input__icon { line-height: 42px; }
-.login-form >>> .el-form-item__error { color: #ffd3d3; }
+.login-form >>> .el-input__suffix { color: var(--biz-text-3); }
+.login-form >>> .el-input__icon { line-height: 40px; }
+.login-form >>> .el-form-item__error { color: #ef4444; }
 
 .login-btn {
   width: 100%;
-  height: 44px;
-  font-size: 15px;
+  height: 40px;
+  font-size: 14px;
   font-weight: 500;
   letter-spacing: 4px;
   border: none;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #4a90e2 0%, #2b7bc4 100%);
-  box-shadow: 0 6px 18px rgba(74, 144, 226, 0.45);
+  border-radius: 4px;
+  background: var(--biz-primary);
 }
-.login-btn:hover { opacity: 0.92; }
+.login-btn:hover { background: var(--biz-primary-light); }
 
 .login-footer {
-  margin-top: 18px;
+  margin-top: 16px;
   text-align: center;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--biz-text-4);
 }
 </style>

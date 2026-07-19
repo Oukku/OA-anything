@@ -1,14 +1,72 @@
-/* 全局样式 */
+/* 全局样式 - 商务主题（藏青蓝 + 纯白底 + 轻盈） */
+:root {
+  --biz-primary: #1e40af;
+  --biz-primary-light: #3b82f6;
+  --biz-primary-dark: #1e3a5f;
+  --biz-bg: #f8fafc;
+  --biz-border: #e2e8f0;
+  --biz-text-1: #0f172a;
+  --biz-text-2: #334155;
+  --biz-text-3: #64748b;
+  --biz-text-4: #94a3b8;
+  --biz-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  --biz-shadow-hover: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
 html, body, #app {
   height: 100%;
   margin: 0;
   padding: 0;
   font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
-  background: linear-gradient(135deg, #eef3f8 0%, #dde9f3 100%);
+  background: var(--biz-bg);
+  color: var(--biz-text-2);
 }
 
-/* 全局滚动条美化 */
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-thumb { background: rgba(74, 144, 226, 0.25); border-radius: 8px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(74, 144, 226, 0.4); }
+/* 全局滚动条 - 藏青细条 */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: rgba(30, 64, 175, 0.18); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(30, 64, 175, 0.32); }
 ::-webkit-scrollbar-track { background: transparent; }
+
+/* Element UI 商务主题覆盖 */
+.el-card {
+  border: 1px solid var(--biz-border) !important;
+  border-radius: 6px !important;
+  box-shadow: var(--biz-shadow) !important;
+}
+.el-card__header {
+  padding: 14px 18px !important;
+  border-bottom: 1px solid var(--biz-border) !important;
+  background: #fff !important;
+  font-weight: 600;
+  color: var(--biz-text-1);
+}
+.el-card__body { padding: 16px 18px !important; }
+
+.el-button--primary {
+  background: var(--biz-primary) !important;
+  border-color: var(--biz-primary) !important;
+}
+.el-button--primary:hover {
+  background: var(--biz-primary-light) !important;
+  border-color: var(--biz-primary-light) !important;
+}
+
+.el-table {
+  border: 1px solid var(--biz-border) !important;
+  border-radius: 6px;
+}
+.el-table th {
+  background: #f8fafc !important;
+  color: var(--biz-text-2) !important;
+  font-weight: 600;
+  border-bottom: 1px solid var(--biz-border) !important;
+}
+.el-table td { border-bottom: 1px solid var(--biz-border) !important; }
+.el-table--striped .el-table__body tr.el-table__row--striped td {
+  background: #fafbfc !important;
+}
+
+.el-input__inner:focus,
+.el-textarea__inner:focus { border-color: var(--biz-primary) !important; }
+.el-tag--plain { border-color: var(--biz-border); }
