@@ -1,6 +1,8 @@
 package com.jlwl.rag.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.jlwl.rag.config.RagServiceProperties;
 import com.jlwl.rag.dto.RagDocumentInfo;
 import com.jlwl.rag.dto.RagQueryRequest;
@@ -11,6 +13,7 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -30,15 +33,29 @@ public class RagClient {
 
     private final RestTemplate restTemplate;
     private final RagServiceProperties props;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     @Autowired
     public RagClient(RagServiceProperties props) {
         this.props = props;
+        // 注册 JavaTimeModule 支持 LocalDateTime 的反序列化
+        this.objectMapper = new ObjectMapper();
+        this.objectMapper.registerModule(new JavaTimeModule());
+        this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        // RAG 服务返回的 DocumentUploadResponse 有 message 字段，RagDocumentInfo 没有，忽略未知字段
+        this.objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
         ClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         ((SimpleClientHttpRequestFactory) factory).setConnectTimeout(5_000);
         ((SimpleClientHttpRequestFactory) factory).setReadTimeout(props.getTimeoutMs());
         this.restTemplate = new RestTemplate(factory);
+        // 让 RestTemplate 也用同一个 ObjectMapper（支持 snake_case + LocalDateTime）
+        for (int i = 0; i < this.restTemplate.getMessageConverters().size(); i++) {
+            if (this.restTemplate.getMessageConverters().get(i) instanceof MappingJackson2HttpMessageConverter) {
+                this.restTemplate.getMessageConverters().set(i, new MappingJackson2HttpMessageConverter(this.objectMapper));
+                break;
+            }
+        }
     }
 
     /** 健康检查。 */
@@ -141,6 +158,44 @@ public class RagClient {
         } catch (Exception e) {
             log.warn("RAG getGraph failed: {}", e.getMessage());
             return Map.of();
+        }
+    }
+
+    /** 预览文档（解析后文本 + 分块列表）。 */
+    public Map<String, Object> previewDocument(String docId) {
+        try {
+            ResponseEntity<Map> r = restTemplate.getForEntity(
+                props.getServiceUrl() + "/api/v1/documents/" + docId + "/preview", Map.class);
+            return r.getBody() != null ? r.getBody() : Map.of("error", "empty response");
+        } catch (Exception e) {
+            log.warn("RAG preview failed: {}", e.getMessage());
+            return Map.of("error", e.getMessage());
+        }
+    }
+
+    /** 重新解析文档。 */
+    public Map<String, Object> reparseDocument(String docId) {
+        try {
+            ResponseEntity<Map> r = restTemplate.postForEntity(
+                props.getServiceUrl() + "/api/v1/documents/" + docId + "/reparse",
+                null, Map.class);
+            return r.getBody() != null ? r.getBody() : Map.of("error", "empty response");
+        } catch (Exception e) {
+            log.warn("RAG reparse failed: {}", e.getMessage());
+            return Map.of("error", e.getMessage());
+        }
+    }
+
+    /** 获取单个文档实时状态（从 RAG 服务）。 */
+    public RagDocumentInfo getDocumentStatus(String docId) {
+        try {
+            ResponseEntity<Map> r = restTemplate.getForEntity(
+                props.getServiceUrl() + "/api/v1/documents/" + docId, Map.class);
+            if (r.getBody() == null) return null;
+            return objectMapper.convertValue(r.getBody(), RagDocumentInfo.class);
+        } catch (Exception e) {
+            log.warn("RAG getDocumentStatus failed: {}", e.getMessage());
+            return null;
         }
     }
 

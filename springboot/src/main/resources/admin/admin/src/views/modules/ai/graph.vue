@@ -54,7 +54,10 @@ export default {
     this.loadKbs()
   },
   beforeDestroy() {
-    if (this.cy) this.cy.destroy()
+    if (this.cy) {
+      try { this.cy.removeAllListeners(); this.cy.destroy() } catch (e) { /* ignore */ }
+      this.cy = null
+    }
   },
   methods: {
     async loadKbs() {
@@ -93,7 +96,14 @@ export default {
       }
     },
     renderGraph(data) {
-      if (this.cy) { this.cy.destroy(); this.cy = null }
+      // 销毁旧实例前先移除所有事件，避免 destroy 后 notify 空指针
+      if (this.cy) {
+        try {
+          this.cy.removeAllListeners()
+          this.cy.destroy()
+        } catch (e) { /* ignore */ }
+        this.cy = null
+      }
       if (!window.cytoscape) {
         this.$message.warning('Cytoscape.js 未加载，请检查依赖')
         return
@@ -167,7 +177,8 @@ export default {
             ],
             layout: { name: 'cose', padding: 30, animate: true, nodeRepulsion: 8000, idealEdgeLength: 100 }
           })
-          this.cy.resize()
+          // resize 单独 try/catch，避免内部 notify 空指针冒泡
+          try { this.cy && this.cy.resize() } catch (e) { /* ignore notify error */ }
         } catch (e) {
           console.error('cytoscape init failed:', e)
         }

@@ -88,14 +88,14 @@ public class RagController {
         doc.setFilename(file.getOriginalFilename());
         doc.setFileSize(file.getSize());
         doc.setFileType(ext(file.getOriginalFilename()));
-        doc.setStatus(0);
+        doc.setStatus(0); // 处理中（RAG 异步解析）
         kbDocumentService.save(doc, userId);
 
         try {
             RagDocumentInfo info = ragClient.uploadDocument(
                 file.getOriginalFilename(), file.getBytes(), String.valueOf(kbId));
             doc.setRagDocId(info.getId());
-            doc.setStatus(1);
+            doc.setStatus(0); // RAG 异步解析中，保持 0
             kbDocumentService.save(doc, userId);
             return R.ok(info);
         } catch (Exception e) {
@@ -106,10 +106,61 @@ public class RagController {
         }
     }
 
-    /** 列出已索引文档（按知识库）。 */
+    /** 列出已索引文档（按知识库）- 合并 RAG 服务实时状态。 */
     @GetMapping("/documents")
-    public R<List<KbDocumentEntity>> list(@RequestParam Long kbId) {
-        return R.ok(kbDocumentService.listByKbId(kbId));
+    public R<List<Map<String, Object>>> list(@RequestParam Long kbId) {
+        List<KbDocumentEntity> docs = kbDocumentService.listByKbId(kbId);
+        List<RagDocumentInfo> ragDocs = ragClient.listDocuments(String.valueOf(kbId));
+        java.util.Map<String, RagDocumentInfo> ragMap = ragDocs.stream()
+            .collect(Collectors.toMap(RagDocumentInfo::getId, r -> r, (a, b) -> a));
+
+        List<Map<String, Object>> result = docs.stream().map(d -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", d.getId());
+            m.put("kbId", d.getKbId());
+            m.put("filename", d.getFilename());
+            m.put("fileSize", d.getFileSize());
+            m.put("fileType", d.getFileType());
+            m.put("ragDocId", d.getRagDocId());
+            m.put("createTime", d.getCreateTime());
+            m.put("errorMsg", d.getErrorMsg());
+            m.put("dbStatus", d.getStatus());
+            if (d.getRagDocId() != null && ragMap.containsKey(d.getRagDocId())) {
+                RagDocumentInfo r = ragMap.get(d.getRagDocId());
+                m.put("ragStatus", r.getStatus()); // parsing/indexed/failed
+                m.put("pageCount", r.getPageCount());
+                m.put("chunkCount", r.getChunkCount());
+                // 用 RAG 实时状态覆盖 DB 状态
+                m.put("status", mapRagStatus(r.getStatus(), d.getStatus()));
+            } else {
+                m.put("status", d.getStatus());
+            }
+            return m;
+        }).collect(Collectors.toList());
+        return R.ok(result);
+    }
+
+    /** RAG 字符串状态映射到 DB Integer 状态：parsing->0, indexed->1, failed->-1。 */
+    private Integer mapRagStatus(String ragStatus, Integer dbStatus) {
+        if (ragStatus == null) return dbStatus;
+        return switch (ragStatus) {
+            case "indexed" -> 1;
+            case "failed" -> -1;
+            case "parsing", "queued" -> 0;
+            default -> dbStatus;
+        };
+    }
+
+    /** 文档预览（解析后文本 + 分块）。 */
+    @GetMapping("/preview/{docId}")
+    public R<Map<String, Object>> preview(@PathVariable String docId) {
+        return R.ok(ragClient.previewDocument(docId));
+    }
+
+    /** 重新解析文档。 */
+    @PostMapping("/reparse/{docId}")
+    public R<Map<String, Object>> reparse(@PathVariable String docId) {
+        return R.ok(ragClient.reparseDocument(docId));
     }
 
     /** 删除文档。 */

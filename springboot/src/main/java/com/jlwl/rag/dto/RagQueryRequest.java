@@ -1,13 +1,18 @@
 package com.jlwl.rag.dto;
 
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.Data;
 import java.util.List;
 import java.util.Map;
 
 /**
  * 通用 RAG 查询请求。
+ * <p>
+ * 序列化为 snake_case 发送给 RAG 服务（kb_id、doc_ids、top_k 等）。
  */
 @Data
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class RagQueryRequest {
     private String question;
     /** hybrid | local | global | naive */
