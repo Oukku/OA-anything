@@ -14,7 +14,7 @@ async def health(engine: RagEngine = Depends(get_engine)) -> HealthResponse:
         status="ok" if engine._initialized else "degraded",
         rag_initialized=engine._initialized,
         parser=settings.parser,
-        llm_model=settings.llm_model,
+        llm_model=engine.get_config().get("llm_model", "unknown"),
         working_dir=str(settings.working_dir_path),
     )
 

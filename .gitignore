@@ -72,6 +72,7 @@ rag-service/data/parsed/
 rag-service/data/uploads/
 rag-service/data/test-*.txt
 rag-service/data/last-upload.json
+rag-service/data/*/
 rag-service/storage/
 rag-service/working_dir/
 !rag-service/data/.gitkeep

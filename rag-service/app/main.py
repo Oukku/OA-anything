@@ -4,7 +4,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import chat, documents, graph, health, kb, query
+from app.api.routes import chat, config, documents, graph, health, kb, query
 from app.config import settings
 
 logging.basicConfig(
@@ -35,6 +35,7 @@ app.include_router(query.router)
 app.include_router(kb.router)
 app.include_router(graph.router)
 app.include_router(chat.router)
+app.include_router(config.router)
 
 
 if __name__ == "__main__":

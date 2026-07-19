@@ -143,4 +143,16 @@ public class RagClient {
             return Map.of();
         }
     }
+
+    /** 推送 AI 配置到 RAG 引擎（配置变更后调用）。 */
+    public void pushConfig(Map<String, Object> config) {
+        try {
+            restTemplate.postForEntity(
+                props.getServiceUrl() + "/api/v1/config", config, Map.class);
+            log.info("RAG 配置已推送: llm={}, embedding={}",
+                config.get("llm_model"), config.get("embedding_model"));
+        } catch (Exception e) {
+            log.warn("RAG pushConfig failed: {}", e.getMessage());
+        }
+    }
 }

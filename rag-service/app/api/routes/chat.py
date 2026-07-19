@@ -58,7 +58,7 @@ async def raw_chat(
     await engine.initialize()
     t0 = time.time()
     try:
-        if engine._mock:
+        if engine.is_mock_mode():
             from app.core.mock_llm import mock_llm_func
             answer = await mock_llm_func(body.prompt, system_prompt=body.system)
         else:
@@ -72,7 +72,7 @@ async def raw_chat(
         raise HTTPException(status_code=500, detail=str(e))
     return RawChatResponse(
         answer=answer,
-        mock_mode=engine._mock,
+        mock_mode=engine.is_mock_mode(),
         duration_ms=int((time.time() - t0) * 1000),
     )
 
@@ -85,7 +85,7 @@ async def raw_embedding(
     """测 embedding 模型。"""
     await engine.initialize()
     try:
-        if engine._mock:
+        if engine.is_mock_mode():
             from app.core.mock_llm import mock_embed_func
             vecs = await mock_embed_func(body.texts)
         else:
@@ -93,7 +93,7 @@ async def raw_embedding(
         return EmbeddingResponse(
             dim=int(vecs.shape[1]) if hasattr(vecs, "shape") else (len(vecs[0]) if vecs else 0),
             count=len(body.texts),
-            mock_mode=engine._mock,
+            mock_mode=engine.is_mock_mode(),
         )
     except Exception as e:
         logger.exception("raw_embedding failed")
@@ -105,9 +105,9 @@ async def chat_health(engine: RagEngine = Depends(get_engine)):
     """综合健康检查 - 测三件套：LLM、Vision、Embedding。"""
     from app.core.mock_llm import is_mock_mode
     await engine.initialize()
-    results = {"mock_mode": engine._mock, "checks": {}}
+    results = {"mock_mode": engine.is_mock_mode(), "checks": {}}
     try:
-        if engine._mock:
+        if engine.is_mock_mode():
             from app.core.mock_llm import mock_llm_func
             ans = await mock_llm_func("ping")
             results["checks"]["llm"] = "ok" if "Mock" in ans else "fail"

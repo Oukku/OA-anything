@@ -56,8 +56,8 @@ public class RagController {
             req.setKbId("default");
         }
         if (req.getTopK() == null) req.setTopK(cfg.getTopK());
-        if (cfg.getTemperature() != null) req.setTemperature(cfg.getTemperature().doubleValue());
-        if (cfg.getMaxTokens() != null) req.setMaxTokens(cfg.getMaxTokens());
+        if (cfg.getLlmTemperature() != null) req.setTemperature(cfg.getLlmTemperature().doubleValue());
+        if (cfg.getLlmMaxTokens() != null) req.setMaxTokens(cfg.getLlmMaxTokens());
 
         long t0 = System.currentTimeMillis();
         RagQueryResponse resp = ragClient.query(req);
