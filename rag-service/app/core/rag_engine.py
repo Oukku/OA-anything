@@ -43,6 +43,7 @@ class RagEngine:
             "llm_api_key": "",
             "llm_temperature": 0.7,
             "llm_max_tokens": 2048,
+            "system_prompt": "",  # 系统提示词 - 约束 LLM 输出格式
             "reranker_provider": "siliconflow",
             "reranker_base_url": "https://api.siliconflow.cn/v1",
             "reranker_model": "BAAI/bge-reranker-v2-m3",
@@ -51,16 +52,26 @@ class RagEngine:
         }
 
     def update_config(self, cfg: Dict[str, Any]) -> None:
-        """Spring Boot 推送新配置时调用，触发重新初始化。"""
-        changed = False
+        """Spring Boot 推送新配置时调用。
+
+        模型配置（embedding/llm/reranker/api_key/base_url/model）变更时重新初始化。
+        system_prompt 仅影响 query，不需要重新初始化 RAGAnything。
+        """
+        reinit_keys = {"embedding_provider", "embedding_base_url", "embedding_model", "embedding_api_key",
+                       "embedding_dim", "llm_provider", "llm_base_url", "llm_model", "llm_api_key",
+                       "reranker_provider", "reranker_base_url", "reranker_model", "reranker_api_key",
+                       "mock_mode"}
+        need_reinit = False
         for k, v in cfg.items():
             if k in self._model_config and self._model_config[k] != v:
                 self._model_config[k] = v
-                changed = True
-        if changed:
+                if k in reinit_keys:
+                    need_reinit = True
+                logger.info("RAG 配置项更新: %s", k)
+        if need_reinit:
             self._initialized = False
             self._rag = None
-            logger.info("RAG 配置已更新，将在下次调用时重新初始化")
+            logger.info("RAG 模型配置已更新，将在下次调用时重新初始化")
 
     def get_config(self) -> Dict[str, Any]:
         return dict(self._model_config)
@@ -104,7 +115,21 @@ class RagEngine:
 
             logger.info("RAGService 使用真实模型: LLM=%s Embedding=%s", llm_model, emb_model)
 
+            # 从配置读取 LLM 调用参数（temperature/max_tokens），通过闭包传给 llm_model_func
+            _llm_temperature = float(cfg.get("llm_temperature", 0.3))
+            _llm_max_tokens = int(cfg.get("llm_max_tokens", 2048))
+
             def llm_model_func(prompt, system_prompt=None, history_messages=[], **kwargs):
+                # 调试日志：查看实际传给 LLM 的内容
+                if system_prompt and len(system_prompt) > 100:
+                    logger.info("[llm_call] prompt len=%d, system_prompt len=%d, sys_head=%s",
+                                len(prompt), len(system_prompt),
+                                system_prompt[:200].replace("\n", "\\n"))
+                    logger.info("[llm_call] sys_tail=%s",
+                                system_prompt[-300:].replace("\n", "\\n"))
+                # 显式注入 temperature 和 max_tokens（LightRAG 默认不传，导致使用模型默认值，小模型容易跑偏）
+                kwargs.setdefault("temperature", _llm_temperature)
+                kwargs.setdefault("max_tokens", _llm_max_tokens)
                 return openai_complete_if_cache(
                     llm_model,
                     prompt,
@@ -179,6 +204,16 @@ class RagEngine:
             self._mock = False
 
         from raganything import RAGAnything, RAGAnythingConfig
+        # 覆盖 LightRAG 的 naive_query_context 模板：默认使用 JSON 包装的 chunk，
+        # 小模型（Qwen2.5-7B）容易在 JSON 上下文中产生退化输出（如连续引号）。
+        # 改为纯文本格式，更贴近原始文档，便于小模型理解。
+        from lightrag.prompt import PROMPTS
+        if "naive_query_context" in PROMPTS:
+            PROMPTS["naive_query_context"] = (
+                "以下是检索到的文档片段：\n\n"
+                "{text_chunks_str}\n\n"
+                "参考文档列表：\n{reference_list_str}\n"
+            )
 
         rag_config = RAGAnythingConfig(
             working_dir=str(self.config.working_dir_path),
@@ -221,6 +256,25 @@ class RagEngine:
 
     async def query(self, question: str, mode: str = "hybrid", **kwargs) -> str:
         await self.initialize()
+        # RAGAnything 需要先 _ensure_lightrag_initialized() 才能调用 aquery()
+        await self.rag._ensure_lightrag_initialized()
+        # system_prompt 优先级: 调用方传入 > 引擎配置 > LightRAG 默认（None）
+        if "system_prompt" not in kwargs or not kwargs.get("system_prompt"):
+            cfg_prompt = self._model_config.get("system_prompt", "")
+            if cfg_prompt:
+                kwargs["system_prompt"] = cfg_prompt
+        # LightRAG 占位符兼容：naive 模式用 {content_data}，hybrid/local/global/mix 用 {context_data}
+        # 统一把模板里的占位符按当前模式转换，避免字面占位符泄漏给 LLM
+        sp = kwargs.get("system_prompt")
+        if sp and isinstance(sp, str):
+            if mode == "naive":
+                sp = sp.replace("{context_data}", "{content_data}")
+            else:
+                sp = sp.replace("{content_data}", "{context_data}")
+            kwargs["system_prompt"] = sp
+            # 调试日志：便于排查 LLM 输出异常
+            logger.info("[query] mode=%s, system_prompt len=%d, head=%s",
+                        mode, len(sp), sp[:120].replace("\n", "\\n"))
         return await self.rag.aquery(question, mode=mode, **kwargs)
 
     async def query_with_multimodal(

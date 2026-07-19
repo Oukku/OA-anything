@@ -36,6 +36,25 @@ public class AiConfigService {
     @Value("${oa.aes.key:oa-v2-aes-key-2026}")
     private String aesKey;
 
+    /**
+     * 默认系统提示词 - 约束 Qwen2.5-7B 等小模型输出格式。
+     * 必须包含 {context_data} 占位符（hybrid/local/global 模式）或 {content_data}（naive 模式）。
+     * RAG 引擎会自动按 mode 转换占位符，无需同时写两个。
+     * 可选包含 {response_type} 和 {user_prompt}。
+     */
+    public static final String DEFAULT_SYSTEM_PROMPT =
+        "你是 OA 系统的知识库问答助手。你的任务是基于下方 Context 中提供的文档内容，回答用户的提问。\n\n" +
+        "请严格遵循以下规则：\n" +
+        "1. 输出语言：始终使用简体中文回答。\n" +
+        "2. 输出格式：使用规范的 Markdown，可用标题（#/##/###）、有序列表（1. 2.）、无序列表（-）、表格等。\n" +
+        "3. 数字与金额：所有数字、年限、金额、天数必须使用阿拉伯数字（如 5 天、500 元、3 年、1.5 倍）。禁止用星号（*）、字母（a/o/x）或其他符号代替数字。\n" +
+        "4. 章节编号：保持原文档章节顺序，如\"第一章\"、\"1.1\"、\"2.3\"。禁止写成\"第章第二\"这种错乱格式。\n" +
+        "5. 内容准确性：严格基于 Context 中的内容回答，不要编造信息。Context 中提到的所有数字、年限、金额必须原样引用，不得修改。\n" +
+        "6. 引用来源：不要在末尾添加 References 列表，除非用户明确要求。\n" +
+        "7. 简洁性：回答简明扼要，避免重复。\n" +
+        "8. 回答要求：必须直接回答用户问题。如果 Context 中包含相关内容，必须给出具体回答；只有当 Context 完全没有相关内容时，才能说明\"知识库中暂无相关内容\"。\n\n" +
+        "---Context---\n{context_data}";
+
     private AES aes() {
         String key = SecureUtil.md5(aesKey).substring(0, 16);
         return SecureUtil.aes(key.getBytes(StandardCharsets.UTF_8));
@@ -69,6 +88,10 @@ public class AiConfigService {
             cfg.setRerankerProvider("siliconflow");
             cfg.setRerankerBaseUrl("https://api.siliconflow.cn/v1");
             cfg.setRerankerModel("BAAI/bge-reranker-v2-m3");
+        }
+        // system_prompt 为空时回填默认值
+        if (cfg.getSystemPrompt() == null || cfg.getSystemPrompt().isEmpty()) {
+            cfg.setSystemPrompt(DEFAULT_SYSTEM_PROMPT);
         }
         return cfg;
     }
@@ -123,6 +146,8 @@ public class AiConfigService {
                 cfg.put("llm_api_key", decrypted.getLlmApiKey());
                 cfg.put("llm_temperature", decrypted.getLlmTemperature());
                 cfg.put("llm_max_tokens", decrypted.getLlmMaxTokens());
+                cfg.put("system_prompt", decrypted.getSystemPrompt() != null
+                    ? decrypted.getSystemPrompt() : DEFAULT_SYSTEM_PROMPT);
                 cfg.put("reranker_provider", decrypted.getRerankerProvider());
                 cfg.put("reranker_base_url", decrypted.getRerankerBaseUrl());
                 cfg.put("reranker_model", decrypted.getRerankerModel());

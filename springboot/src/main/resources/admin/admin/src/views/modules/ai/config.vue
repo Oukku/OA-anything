@@ -112,12 +112,33 @@
       </el-col>
     </el-row>
 
+    <div class="glass-card prompt-card">
+      <div class="model-card-header">
+        <i class="el-icon-edit-outline"></i>
+        <span>系统提示词（约束 AI 输出格式）</span>
+        <el-tag size="mini" type="info" effect="plain">可选</el-tag>
+        <el-button size="mini" type="text" @click="resetPrompt" style="margin-left: auto">重置为默认</el-button>
+      </div>
+      <div class="prompt-desc">
+        自定义 LLM 系统提示词，用于约束 AI 回答的语言、格式、数字规范等。
+        必须包含 <code>&#123;&#123;context_data&#125;&#125;</code> 占位符（LightRAG 会自动替换为检索到的文档内容）。
+        留空则使用内置默认模板。
+      </div>
+      <el-input
+        v-model="form.systemPrompt"
+        type="textarea"
+        :rows="10"
+        placeholder="留空使用默认提示词模板（中文 + Markdown + 禁止乱码）"
+      ></el-input>
+    </div>
+
     <div class="glass-card config-actions">
       <el-button type="primary" @click="save" :loading="saving">保存配置</el-button>
       <div class="config-tips">
         <span>1. 三组模型共用硅基流动一个 Key 即可</span>
         <span>2. API Key 经 AES 加密存储</span>
         <span>3. 保存后自动推送到 RAG 引擎并重新初始化</span>
+        <span>4. 系统提示词变更不需要重新初始化 RAG 引擎</span>
       </div>
     </div>
   </div>
@@ -142,11 +163,27 @@ export default {
         llmApiKey: '',
         llmTemperature: 0.7,
         llmMaxTokens: 2048,
+        systemPrompt: '',
         rerankerProvider: 'siliconflow',
         rerankerBaseUrl: 'https://api.siliconflow.cn/v1',
         rerankerModel: 'BAAI/bge-reranker-v2-m3',
         rerankerApiKey: ''
       },
+      // 默认系统提示词模板（与后端 AiConfigService.DEFAULT_SYSTEM_PROMPT 一致）
+      defaultSystemPrompt: [
+        '你是 OA 系统的知识库问答助手。请严格遵循以下规则：',
+        '',
+        '1. 输出语言：始终使用简体中文回答。',
+        '2. 输出格式：使用规范的 Markdown，可用标题（#/##/###）、有序列表（1. 2.）、无序列表（-）、表格等。',
+        '3. 数字与金额：所有数字、年限、金额、天数必须使用阿拉伯数字（如 5 天、500 元、3 年）。禁止用星号（*）、字母（a/o/x）或其他符号代替数字。',
+        '4. 章节编号：保持原文档章节顺序，如"第一章"、"1.1"。禁止写成"第章第二"这种错乱格式。',
+        '5. 引用来源：不要在末尾添加 References 列表，除非用户明确要求。',
+        '6. 内容准确性：严格基于检索到的 Context 回答，不要编造信息。Context 不完整时明确说明"知识库内容不完整"。',
+        '7. 简洁性：回答简明扼要，避免重复，禁止使用"夃、夊、夤、夥"等异常汉字。',
+        '',
+        '---Context---',
+        '{context_data}'
+      ].join('\n'),
       saving: false,
       testingEmbedding: false,
       testingLlm: false,
@@ -176,6 +213,7 @@ export default {
           llmApiKey: '',
           llmTemperature: d.llmTemperature != null ? Number(d.llmTemperature) : 0.7,
           llmMaxTokens: d.llmMaxTokens || 2048,
+          systemPrompt: d.systemPrompt || '',
           rerankerProvider: d.rerankerProvider || 'siliconflow',
           rerankerBaseUrl: d.rerankerBaseUrl || 'https://api.siliconflow.cn/v1',
           rerankerModel: d.rerankerModel || 'BAAI/bge-reranker-v2-m3',
@@ -235,6 +273,10 @@ export default {
       } else {
         this.$message.error(res && res.msg ? res.msg : '测试失败')
       }
+    },
+    resetPrompt() {
+      this.form.systemPrompt = this.defaultSystemPrompt
+      this.$message.success('已重置为默认提示词，记得点击保存')
     }
   }
 }
@@ -310,6 +352,26 @@ export default {
     font-size: 12px;
     color: #909399;
     line-height: 1.8;
+  }
+}
+
+.prompt-card {
+  margin-top: 16px;
+  padding: 16px 20px;
+
+  .prompt-desc {
+    font-size: 12px;
+    color: #909399;
+    line-height: 1.7;
+    margin-bottom: 10px;
+    code {
+      background: rgba(74, 144, 226, 0.1);
+      color: #4a90e2;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 12px;
+    }
   }
 }
 </style>

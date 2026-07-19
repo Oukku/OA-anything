@@ -58,6 +58,12 @@ public class RagController {
         if (req.getTopK() == null) req.setTopK(cfg.getTopK());
         if (cfg.getLlmTemperature() != null) req.setTemperature(cfg.getLlmTemperature().doubleValue());
         if (cfg.getLlmMaxTokens() != null) req.setMaxTokens(cfg.getLlmMaxTokens());
+        // 注入系统提示词（前端未传时回填配置中的提示词，再回填默认值）
+        if (req.getSystemPrompt() == null || req.getSystemPrompt().isEmpty()) {
+            String sp = cfg.getSystemPrompt();
+            if (sp == null || sp.isEmpty()) sp = com.jlwl.service.AiConfigService.DEFAULT_SYSTEM_PROMPT;
+            req.setSystemPrompt(sp);
+        }
 
         long t0 = System.currentTimeMillis();
         RagQueryResponse resp = ragClient.query(req);

@@ -25,6 +25,7 @@ class ModelConfig(BaseModel):
     llm_api_key: str | None = None
     llm_temperature: float | None = None
     llm_max_tokens: int | None = None
+    system_prompt: str | None = None
     reranker_provider: str | None = None
     reranker_base_url: str | None = None
     reranker_model: str | None = None

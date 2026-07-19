@@ -52,6 +52,9 @@ public class AiConfigEntity {
     private BigDecimal llmTemperature;
     @TableField("llm_max_tokens")
     private Integer llmMaxTokens;
+    /** 系统提示词 - 约束 LLM 输出格式（中文/Markdown/禁止乱码）。空则用默认。 */
+    @TableField("system_prompt")
+    private String systemPrompt;
 
     // ===== Reranker 模型（重排序） =====
     @TableField("reranker_provider")

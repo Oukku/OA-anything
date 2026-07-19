@@ -24,6 +24,8 @@ public class RagQueryRequest {
     private Double temperature = 0.7;
     private Integer maxTokens = 2048;
     private Long sessionId;
+    /** 系统提示词 - 约束 LLM 输出格式，空则用 RAG 引擎默认 */
+    private String systemPrompt;
     /** 多模态内容 - 可选 */
     private List<Map<String, Object>> multimodalContent;
 }

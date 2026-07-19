@@ -52,6 +52,7 @@ class QueryRequest(BaseModel):
     top_k: int = 10
     temperature: float = 0.7
     max_tokens: int = 2048
+    system_prompt: Optional[str] = Field(default=None, description="自定义系统提示词，覆盖 LightRAG 默认 rag_response 模板")
 
 
 class QueryResponse(BaseModel):

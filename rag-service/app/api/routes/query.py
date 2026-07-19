@@ -38,6 +38,9 @@ async def query(
         if body.doc_ids:
             # 限定在指定文档集合内检索（RAG-Anything/LightRAG 支持 context 过滤）
             query_kwargs["doc_ids"] = body.doc_ids
+        if body.system_prompt:
+            # 自定义系统提示词，覆盖 LightRAG 默认 rag_response 模板
+            query_kwargs["system_prompt"] = body.system_prompt
         answer = await engine.query(
             body.question,
             **query_kwargs,

@@ -51,7 +51,13 @@
             <i :class="m.role === 'user' ? 'el-icon-user' : 'el-icon-cpu'"></i>
           </div>
           <div class="chat-bubble">
-            <div class="chat-text">{{ m.content }}</div>
+            <div
+              class="chat-text"
+              :class="{ 'chat-text-md': m.role === 'bot' }"
+              v-html="m.role === 'bot' ? renderMd(m.content) : ''"
+              v-if="m.role === 'bot'"
+            ></div>
+            <div class="chat-text" v-else>{{ m.content }}</div>
             <div v-if="m.durationMs" class="chat-meta">
               <i class="el-icon-time"></i> {{ m.durationMs }}ms · {{ m.mode }}
             </div>
@@ -221,6 +227,61 @@ export default {
         const box = this.$refs.messagesBox
         if (box) box.scrollTop = box.scrollHeight
       })
+    },
+    /**
+     * 轻量 Markdown 渲染（无外部依赖）。
+     * 支持：标题 / 粗体 / 斜体 / 行内代码 / 无序有序列表 / 段落 / 换行。
+     * 输入先转义 HTML，再做 markdown 替换，避免 XSS。
+     */
+    renderMd(text) {
+      if (!text) return ''
+      let s = String(text)
+      // 1. HTML 转义
+      s = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      // 2. 代码块（```...```）
+      s = s.replace(/```([\s\S]*?)```/g, (m, c) => '<pre><code>' + c.replace(/^\n/, '') + '</code></pre>')
+      // 3. 按行分割处理标题/列表/段落
+      const lines = s.split('\n')
+      const out = []
+      let inUl = false, inOl = false
+      const closeLists = () => { if (inUl) { out.push('</ul>'); inUl = false } if (inOl) { out.push('</ol>'); inOl = false } }
+      for (let raw of lines) {
+        const line = raw
+        // 代码块中行已包含 <pre>，跳过处理
+        if (line.indexOf('<pre>') === 0 || line.indexOf('</pre>') === 0) { closeLists(); out.push(line); continue }
+        // 标题
+        const h = line.match(/^(#{1,6})\s+(.*)$/)
+        if (h) { closeLists(); const lvl = h[1].length; out.push('<h' + lvl + '>' + this._mdInline(h[2]) + '</h' + lvl + '>'); continue }
+        // 空行
+        if (!line.trim()) { closeLists(); continue }
+        // 无序列表
+        const ul = line.match(/^[\-\*\+]\s+(.*)$/)
+        if (ul) { if (!inUl) { closeLists(); out.push('<ul>'); inUl = true } out.push('<li>' + this._mdInline(ul[1]) + '</li>'); continue }
+        // 有序列表
+        const ol = line.match(/^\d+\.\s+(.*)$/)
+        if (ol) { if (!inOl) { closeLists(); out.push('<ol>'); inOl = true } out.push('<li>' + this._mdInline(ol[1]) + '</li>'); continue }
+        // 引用
+        const bq = line.match(/^&gt;\s?(.*)$/)
+        if (bq) { closeLists(); out.push('<blockquote>' + this._mdInline(bq[1]) + '</blockquote>'); continue }
+        // 普通段落
+        closeLists()
+        out.push('<p>' + this._mdInline(line) + '</p>')
+      }
+      closeLists()
+      return out.join('\n')
+    },
+    /** Markdown 行内元素：粗体 / 斜体 / 行内代码 / 链接 */
+    _mdInline(s) {
+      if (!s) return ''
+      // 行内代码
+      s = s.replace(/`([^`]+)`/g, '<code>$1</code>')
+      // 粗体
+      s = s.replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>')
+      // 斜体
+      s = s.replace(/\*([^\*]+)\*/g, '<em>$1</em>')
+      // 链接 [text](url)
+      s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+      return s
     }
   }
 }
@@ -355,6 +416,64 @@ $primary-light: #6ec5ff;
   border: 1px solid rgba(255, 255, 255, 0.6);
   border-top-left-radius: 4px;
   color: #1f2d3d;
+}
+
+/* ===== Markdown 渲染 ===== */
+.chat-text-md {
+  line-height: 1.7;
+  ::v-deep {
+    h1, h2, h3, h4, h5, h6 {
+      margin: 12px 0 6px;
+      font-weight: 600;
+      color: #1f2d3d;
+      line-height: 1.4;
+    }
+    h1 { font-size: 18px; padding-bottom: 6px; border-bottom: 1px solid rgba(0,21,41,0.08); }
+    h2 { font-size: 16px; }
+    h3 { font-size: 15px; }
+    h4 { font-size: 14px; }
+    p { margin: 6px 0; }
+    ul, ol { margin: 6px 0; padding-left: 22px; }
+    ul li { list-style: disc; }
+    ol li { list-style: decimal; }
+    li { margin: 3px 0; }
+    code {
+      background: rgba(74,144,226,0.1);
+      color: #c7254e;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-family: 'Consolas','Monaco',monospace;
+      font-size: 13px;
+    }
+    pre {
+      background: rgba(30,41,59,0.92);
+      color: #e2e8f0;
+      padding: 10px 12px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin: 8px 0;
+      code { background: transparent; color: inherit; padding: 0; font-size: 13px; }
+    }
+    blockquote {
+      margin: 6px 0;
+      padding: 4px 12px;
+      border-left: 3px solid $primary;
+      background: rgba(74,144,226,0.06);
+      color: #606266;
+    }
+    strong { color: #1f2d3d; font-weight: 600; }
+    a { color: $primary; text-decoration: none; &:hover { text-decoration: underline; } }
+    table {
+      border-collapse: collapse;
+      margin: 8px 0;
+      th, td {
+        border: 1px solid rgba(0,21,41,0.1);
+        padding: 6px 10px;
+        font-size: 13px;
+      }
+      th { background: rgba(74,144,226,0.08); font-weight: 600; }
+    }
+  }
 }
 .chat-meta {
   font-size: 11px;
