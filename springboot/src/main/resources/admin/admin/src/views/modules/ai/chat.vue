@@ -66,8 +66,32 @@
 
         <div v-if="loading" class="chat-msg chat-msg-bot">
           <div class="chat-avatar avatar-bot"><i class="el-icon-cpu"></i></div>
-          <div class="chat-bubble chat-msg-loading">
-            <span class="chat-dot"></span><span class="chat-dot"></span><span class="chat-dot"></span>
+          <div class="chat-bubble chat-stage-panel">
+            <div class="stage-panel-title">
+              <i class="el-icon-loading"></i>
+              <span>RAG 流水线</span>
+              <span v-if="streamTotalMs" class="stage-panel-total">{{ streamTotalMs }}ms</span>
+            </div>
+            <div class="stage-list">
+              <div
+                v-for="s in stages"
+                :key="s.key"
+                class="stage-item"
+                :class="'stage-' + s.status"
+              >
+                <div class="stage-icon">
+                  <i v-if="s.status === 'done'" class="el-icon-check"></i>
+                  <i v-else-if="s.status === 'running'" class="el-icon-loading"></i>
+                  <i v-else :class="s.icon"></i>
+                </div>
+                <div class="stage-info">
+                  <span class="stage-label">{{ s.label }}</span>
+                  <span v-if="s.status === 'done' && s.duration" class="stage-duration">{{ s.duration }}ms</span>
+                  <span v-else-if="s.status === 'running'" class="stage-running">{{ s.message || '处理中...' }}</span>
+                  <span v-else class="stage-pending">待处理</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -104,7 +128,17 @@ export default {
       messages: [],
       question: '',
       loading: false,
-      mode: 'hybrid'
+      mode: 'naive',
+      // SSE 流式相关
+      streamTotalMs: 0,
+      stages: [
+        { key: 'receive',          label: '接收问题',   icon: 'el-icon-message',  status: 'pending', duration: 0, message: '' },
+        { key: 'vector_search',    label: '向量检索',   icon: 'el-icon-search',   status: 'pending', duration: 0, message: '' },
+        { key: 'keyword_search',   label: '关键词检索', icon: 'el-icon-key',      status: 'pending', duration: 0, message: '' },
+        { key: 'rerank',           label: '重排序',     icon: 'el-icon-sort',     status: 'pending', duration: 0, message: '' },
+        { key: 'context_assemble', label: '上下文组装', icon: 'el-icon-files',    status: 'pending', duration: 0, message: '' },
+        { key: 'llm_generate',     label: 'LLM 生成',   icon: 'el-icon-cpu',      status: 'pending', duration: 0, message: '' }
+      ]
     }
   },
   watch: {
@@ -199,27 +233,115 @@ export default {
       this.messages.push({ role: 'user', content: q })
       this.question = ''
       this.loading = true
+      this.streamTotalMs = 0
+      this.resetStages()
       this.scrollBottom()
 
+      let answer = ''
+      let totalMs = 0
+      let answerMode = this.mode
       try {
-        const res = await this.$http.post('/rag/query', {
-          question: q,
-          mode: this.mode,
-          kbId: String(this.currentKbId),
-          sessionId: this.currentSession.id
+        // SSE 流式查询：直接调 rag-service（通过 Vue devServer 代理）
+        const resp = await fetch('/rag-service/api/v1/query/stream', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'token': localStorage.getItem('token') || ''
+          },
+          body: JSON.stringify({
+            question: q,
+            mode: this.mode,
+            kb_id: String(this.currentKbId),
+            top_k: 5
+          })
         })
-        const data = (res && res.code === 0) ? res.data : {}
+        if (!resp.ok) throw new Error('SSE 接口返回 ' + resp.status)
+        await this.consumeSSE(resp, (event) => {
+          if (event.type === 'stage') {
+            this.updateStage(event.step, event.status, event.duration_ms || 0, event.message || '')
+          } else if (event.type === 'answer') {
+            answer = event.answer || ''
+            totalMs = event.total_ms || 0
+            answerMode = event.mode || this.mode
+          } else if (event.type === 'error') {
+            throw new Error(event.error || 'RAG 服务错误')
+          }
+        })
+        this.streamTotalMs = totalMs
         this.messages.push({
           role: 'bot',
-          content: data.answer || '（无回复）',
-          mode: data.mode || this.mode,
-          durationMs: data.durationMs
+          content: answer || '（无回复）',
+          mode: answerMode,
+          durationMs: totalMs
         })
+        // 保存到会话消息（SpringBoot）
+        try {
+          await this.$http.post('/rag/message/save', {
+            sessionId: this.currentSession.id,
+            question: q,
+            answer: answer,
+            mode: answerMode,
+            durationMs: totalMs
+          })
+        } catch (saveErr) {
+          console.warn('保存会话消息失败（不影响显示）:', saveErr)
+        }
         this.scrollBottom()
       } catch (e) {
         this.messages.push({ role: 'bot', content: '请求失败：' + (e.message || '') })
       } finally {
         this.loading = false
+      }
+    },
+    resetStages() {
+      this.stages.forEach(s => { s.status = 'pending'; s.duration = 0; s.message = '' })
+    },
+    updateStage(step, status, duration, message) {
+      const stage = this.stages.find(s => s.key === step)
+      if (!stage) return
+      stage.status = status
+      if (status === 'done') {
+        stage.duration = duration
+        stage.message = message
+      } else if (status === 'start') {
+        stage.message = message
+      }
+      // 当前阶段开始时，把前面未完成的阶段标记为 done（容错）
+      if (status === 'start') {
+        const idx = this.stages.findIndex(s => s.key === step)
+        for (let i = 0; i < idx; i++) {
+          if (this.stages[i].status === 'pending' || this.stages[i].status === 'running') {
+            this.stages[i].status = 'done'
+            this.stages[i].duration = this.stages[i].duration || 1
+          }
+        }
+      }
+      this.scrollBottom()
+    },
+    /** 解析 SSE 响应流 */
+    async consumeSSE(resp, onEvent) {
+      const reader = resp.body.getReader()
+      const decoder = new TextDecoder('utf-8')
+      let buffer = ''
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        // SSE 消息以 \n\n 分隔
+        const parts = buffer.split('\n\n')
+        buffer = parts.pop() // 保留最后未完整的部分
+        for (const part of parts) {
+          const line = part.trim()
+          if (!line.startsWith('data:')) continue
+          const payload = line.slice(5).trim()
+          if (payload === '[DONE]') return
+          try {
+            const event = JSON.parse(payload)
+            onEvent(event)
+          } catch (e) {
+            console.warn('SSE 解析失败:', e, payload)
+          }
+        }
       }
     },
     scrollBottom() {
@@ -485,6 +607,85 @@ export default {
   &:nth-child(3) { animation-delay: .4s; }
 }
 @keyframes chatBlink { 0%, 80%, 100% { opacity: .3 } 40% { opacity: 1 } }
+
+/* ===== 6 步骤进度面板 ===== */
+.chat-stage-panel {
+  max-width: 360px;
+  min-width: 280px;
+  padding: 12px 14px;
+
+  .stage-panel-title {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 600;
+    color: var(--biz-primary);
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--biz-border);
+
+    .stage-panel-total {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--biz-text-3);
+      font-weight: normal;
+    }
+  }
+
+  .stage-list {
+    display: flex; flex-direction: column;
+    gap: 6px;
+  }
+
+  .stage-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 4px 0;
+    font-size: 12px;
+    transition: all .2s;
+
+    .stage-icon {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      font-size: 12px;
+      transition: all .3s;
+    }
+    .stage-info {
+      flex: 1;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 8px;
+    }
+    .stage-label { color: var(--biz-text-2); }
+    .stage-duration {
+      font-size: 11px; color: var(--biz-primary);
+      font-family: 'Consolas', 'Monaco', monospace;
+      background: rgba(30,64,175,0.08);
+      padding: 1px 6px; border-radius: 3px;
+    }
+    .stage-running { font-size: 11px; color: var(--biz-text-3); }
+    .stage-pending { font-size: 11px; color: var(--biz-text-4); }
+  }
+
+  /* 待处理：灰色 */
+  .stage-pending .stage-icon {
+    background: #f1f5f9;
+    color: var(--biz-text-4);
+    border: 1px solid var(--biz-border);
+  }
+  /* 进行中：蓝色 + 旋转 */
+  .stage-running .stage-icon {
+    background: rgba(30,64,175,0.1);
+    color: var(--biz-primary);
+    border: 1px solid var(--biz-primary);
+  }
+  .stage-running .stage-label { color: var(--biz-primary); font-weight: 500; }
+  /* 已完成：绿色 */
+  .stage-done .stage-icon {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #86efac;
+  }
+  .stage-done .stage-label { color: var(--biz-text-2); }
+}
 
 .chat-input-bar {
   padding: 12px 16px;

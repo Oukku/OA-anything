@@ -22,10 +22,12 @@
           </div>
           <el-form :model="form" label-width="90px" size="small">
             <el-form-item label="Provider">
-              <el-select v-model="form.embeddingProvider" style="width: 100%">
-                <el-option label="硅基流动" value="siliconflow"></el-option>
+              <el-select v-model="form.embeddingProvider" style="width: 100%" @change="(v) => onProviderChange('embedding', v)">
+                <el-option label="硅基流动 SiliconFlow" value="siliconflow"></el-option>
                 <el-option label="OpenAI" value="openai"></el-option>
-                <el-option label="Ollama" value="ollama"></el-option>
+                <el-option label="小米 MiMo" value="mimo"></el-option>
+                <el-option label="Ollama (本地)" value="ollama"></el-option>
+                <el-option label="自定义 (OpenAI 兼容)" value="custom"></el-option>
               </el-select>
             </el-form-item>
             <el-form-item label="Base URL">
@@ -54,10 +56,12 @@
           </div>
           <el-form :model="form" label-width="90px" size="small">
             <el-form-item label="Provider">
-              <el-select v-model="form.llmProvider" style="width: 100%">
-                <el-option label="硅基流动" value="siliconflow"></el-option>
+              <el-select v-model="form.llmProvider" style="width: 100%" @change="(v) => onProviderChange('llm', v)">
+                <el-option label="硅基流动 SiliconFlow" value="siliconflow"></el-option>
                 <el-option label="OpenAI" value="openai"></el-option>
-                <el-option label="Ollama" value="ollama"></el-option>
+                <el-option label="小米 MiMo" value="mimo"></el-option>
+                <el-option label="Ollama (本地)" value="ollama"></el-option>
+                <el-option label="自定义 (OpenAI 兼容)" value="custom"></el-option>
               </el-select>
             </el-form-item>
             <el-form-item label="Base URL">
@@ -89,9 +93,10 @@
           </div>
           <el-form :model="form" label-width="90px" size="small">
             <el-form-item label="Provider">
-              <el-select v-model="form.rerankerProvider" style="width: 100%">
-                <el-option label="硅基流动" value="siliconflow"></el-option>
-                <el-option label="OpenAI" value="openai"></el-option>
+              <el-select v-model="form.rerankerProvider" style="width: 100%" @change="(v) => onProviderChange('reranker', v)">
+                <el-option label="硅基流动 SiliconFlow" value="siliconflow"></el-option>
+                <el-option label="Jina AI" value="jina"></el-option>
+                <el-option label="自定义 (OpenAI 兼容)" value="custom"></el-option>
               </el-select>
             </el-form-item>
             <el-form-item label="Base URL">
@@ -184,6 +189,28 @@ export default {
         '---Context---',
         '{context_data}'
       ].join('\n'),
+      // 服务商预设：选择已知服务商时自动填充 Base URL + 推荐模型
+      providerPresets: {
+        embedding: {
+          siliconflow: { baseUrl: 'https://api.siliconflow.cn/v1', model: 'BAAI/bge-m3', dim: 1024 },
+          openai:      { baseUrl: 'https://api.openai.com/v1',    model: 'text-embedding-3-small', dim: 1536 },
+          mimo:        { baseUrl: 'https://api.mimo.xiaomi.com/v1', model: 'BAAI/bge-m3', dim: 1024 },
+          ollama:      { baseUrl: 'http://localhost:11434/v1',     model: 'bge-m3', dim: 1024 },
+          custom:      { baseUrl: '', model: '', dim: 1024 }
+        },
+        llm: {
+          siliconflow: { baseUrl: 'https://api.siliconflow.cn/v1',  model: 'Qwen/Qwen2.5-7B-Instruct' },
+          openai:      { baseUrl: 'https://api.openai.com/v1',     model: 'gpt-4o-mini' },
+          mimo:        { baseUrl: 'https://api.mimo.xiaomi.com/v1', model: 'mimo-7b-rl' },
+          ollama:      { baseUrl: 'http://localhost:11434/v1',      model: 'qwen2.5:7b' },
+          custom:      { baseUrl: '', model: '' }
+        },
+        reranker: {
+          siliconflow: { baseUrl: 'https://api.siliconflow.cn/v1', model: 'BAAI/bge-reranker-v2-m3' },
+          jina:        { baseUrl: 'https://api.jina.ai/v1',        model: 'jina-reranker-v2-base-multilingual' },
+          custom:      { baseUrl: '', model: '' }
+        }
+      },
       saving: false,
       testingEmbedding: false,
       testingLlm: false,
@@ -194,6 +221,22 @@ export default {
     this.load()
   },
   methods: {
+    /** 切换服务商时自动填充推荐 Base URL / 模型 / 维度 */
+    onProviderChange(type, provider) {
+      const preset = (this.providerPresets[type] || {})[provider]
+      if (!preset) return
+      if (type === 'embedding') {
+        if (preset.baseUrl) this.form.embeddingBaseUrl = preset.baseUrl
+        if (preset.model)   this.form.embeddingModel = preset.model
+        if (preset.dim)     this.form.embeddingDim = preset.dim
+      } else if (type === 'llm') {
+        if (preset.baseUrl) this.form.llmBaseUrl = preset.baseUrl
+        if (preset.model)   this.form.llmModel = preset.model
+      } else if (type === 'reranker') {
+        if (preset.baseUrl) this.form.rerankerBaseUrl = preset.baseUrl
+        if (preset.model)   this.form.rerankerModel = preset.model
+      }
+    },
     async load() {
       const res = await this.$http.get('/ai/config/info')
       if (res && res.code === 0 && res.data) {

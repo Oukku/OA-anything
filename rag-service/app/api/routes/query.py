@@ -1,10 +1,12 @@
 """查询路由 - 文本问答和多模态问答。"""
 from __future__ import annotations
 
+import json
 import logging
 import time
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 
 from app.core.rag_engine import RagEngine, get_engine
 from app.models.schemas import (
@@ -56,6 +58,51 @@ async def query(
         sources=[],  # 简化版：未来从 context 抽 sources
         mode=body.mode,
         duration_ms=duration_ms,
+    )
+
+
+@router.post("/stream")
+async def query_stream(
+    body: QueryRequest,
+    engine: RagEngine = Depends(get_engine),
+):
+    """SSE 流式查询 - 依次推送 6 个 RAG 阶段事件 + 最终答案。
+
+    事件格式（每行 `data: {json}\\n\\n`）：
+      {"type":"stage","step":"receive|vector_search|keyword_search|rerank|context_assemble|llm_generate","status":"start|done","duration_ms":123,"message":"..."}
+      {"type":"answer","answer":"...","total_ms":1234,"mode":"naive"}
+      {"type":"error","error":"..."}
+      [DONE]
+    """
+    query_kwargs = {
+        "mode": body.mode,
+        "top_k": body.top_k or 10,
+    }
+    if body.doc_ids:
+        query_kwargs["doc_ids"] = body.doc_ids
+    if body.system_prompt:
+        query_kwargs["system_prompt"] = body.system_prompt
+    if body.vlm_enhanced is not None:
+        query_kwargs["vlm_enhanced"] = body.vlm_enhanced
+
+    async def event_generator():
+        try:
+            async for event in engine.query_stream(body.question, **query_kwargs):
+                yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+        except Exception as e:
+            logger.exception("SSE stream error")
+            yield f"data: {json.dumps({'type': 'error', 'error': str(e)}, ensure_ascii=False)}\n\n"
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+            "Access-Control-Allow-Origin": "*",
+        },
     )
 
 

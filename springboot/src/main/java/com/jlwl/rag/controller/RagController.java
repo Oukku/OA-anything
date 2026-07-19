@@ -194,6 +194,29 @@ public class RagController {
         return R.ok(data);
     }
 
+    /**
+     * 保存会话消息（供 SSE 流式查询后调用）。
+     * <p>
+     * 前端通过 /rag-service/api/v1/query/stream 直接流式获取 AI 回答，
+     * 流结束后调用此接口一次性保存 user + bot 两条消息。
+     * <p>
+     * body: { sessionId, question, answer, mode, durationMs }
+     */
+    @PostMapping("/message/save")
+    public R<Boolean> saveMessage(@RequestBody Map<String, Object> body) {
+        Long sessionId = Long.valueOf(body.get("sessionId").toString());
+        String question = (String) body.getOrDefault("question", "");
+        String answer = (String) body.getOrDefault("answer", "");
+        String mode = (String) body.getOrDefault("mode", "naive");
+        Object durObj = body.get("durationMs");
+        int durationMs = durObj == null ? 0 : Integer.parseInt(durObj.toString());
+
+        kbMessageService.save(buildMsg(sessionId, "user", question, mode, 0));
+        kbMessageService.save(buildMsg(sessionId, "bot", answer, mode, durationMs));
+        kbSessionService.updateTitle(sessionId, truncateTitle(question));
+        return R.ok(true);
+    }
+
     private KbMessageEntity buildMsg(Long sessionId, String role, String content, String mode, int durationMs) {
         KbMessageEntity m = new KbMessageEntity();
         m.setSessionId(sessionId);

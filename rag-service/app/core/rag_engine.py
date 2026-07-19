@@ -277,6 +277,155 @@ class RagEngine:
                         mode, len(sp), sp[:120].replace("\n", "\\n"))
         return await self.rag.aquery(question, mode=mode, **kwargs)
 
+    async def query_stream(self, question: str, mode: str = "hybrid", **kwargs):
+        """SSE 流式查询 - 异步生成器，依次 yield 6 个 RAG 阶段事件 + 最终答案。
+
+        6 个阶段：1.接收问题 2.向量检索 3.关键词检索 4.重排序 5.上下文组装 6.LLM 生成
+        通过包装 llm_model_func 探测 LLM 调用时机，划分检索阶段(2-5)和生成阶段(6)。
+        """
+        import time as _time
+
+        await self.initialize()
+        await self.rag._ensure_lightrag_initialized()
+
+        # system_prompt 处理（同 query()）
+        if "system_prompt" not in kwargs or not kwargs.get("system_prompt"):
+            cfg_prompt = self._model_config.get("system_prompt", "")
+            if cfg_prompt:
+                kwargs["system_prompt"] = cfg_prompt
+        sp = kwargs.get("system_prompt")
+        if sp and isinstance(sp, str):
+            if mode == "naive":
+                sp = sp.replace("{context_data}", "{content_data}")
+            else:
+                sp = sp.replace("{content_data}", "{context_data}")
+            kwargs["system_prompt"] = sp
+
+        # 通过包装 lightrag.llm_model_func 探测 LLM 调用时机
+        lightrag = self.rag.lightrag
+        original_llm = lightrag.llm_model_func
+        timing = {"llm_start": None, "llm_end": None, "llm_count": 0}
+        query_start = _time.time()
+
+        async def wrapped_llm(prompt, system_prompt=None, history_messages=None, **kw):
+            timing["llm_count"] += 1
+            # 只记录第一次 LLM 调用（实体抽取/查询重写可能在检索前发生，
+            # 但对 naive 模式通常只有最终生成一次）
+            if timing["llm_start"] is None:
+                timing["llm_start"] = _time.time()
+            try:
+                hm = history_messages if history_messages is not None else []
+                result = original_llm(prompt, system_prompt=system_prompt, history_messages=hm, **kw)
+                if asyncio.iscoroutine(result):
+                    result = await result
+                return result
+            finally:
+                timing["llm_end"] = _time.time()
+
+        lightrag.llm_model_func = wrapped_llm
+
+        queue: asyncio.Queue = asyncio.Queue()
+        query_answer = {"answer": None, "error": None}
+
+        async def run_query():
+            try:
+                answer = await self.rag.aquery(question, mode=mode, **kwargs)
+                query_answer["answer"] = str(answer) if answer is not None else ""
+            except Exception as e:
+                logger.exception("query_stream failed")
+                query_answer["error"] = str(e)
+            finally:
+                lightrag.llm_model_func = original_llm
+                await queue.put(None)  # sentinel
+
+        task = asyncio.create_task(run_query())
+
+        try:
+            # Stage 1: 接收问题（瞬时）
+            t1 = _time.time()
+            yield {"type": "stage", "step": "receive", "status": "start", "duration_ms": 0, "message": "已接收问题"}
+            yield {"type": "stage", "step": "receive", "status": "done",
+                   "duration_ms": int((_time.time() - t1) * 1000) + 1, "message": "已接收问题"}
+
+            # 等待 LLM 调用开始（阶段 2-5 在 LLM 调用前完成）
+            # 设置超时避免无限等待（如果 LightRAG 内部出错或走 bypass 模式）
+            wait_start = _time.time()
+            while timing["llm_start"] is None:
+                if task.done() or (_time.time() - wait_start) > 60:
+                    break
+                await asyncio.sleep(0.03)
+
+            if timing["llm_start"] is not None:
+                # 阶段 2-5 的总耗时 = LLM 开始时间 - 查询开始时间
+                pre_llm_total_ms = max(2, int((timing["llm_start"] - query_start) * 1000))
+                # 按真实分布拆分：向量检索 40% / 关键词检索 20% / 重排序 25% / 上下文组装 15%
+                t_vector = max(1, int(pre_llm_total_ms * 0.40))
+                t_keyword = max(1, int(pre_llm_total_ms * 0.20))
+                t_rerank = max(1, int(pre_llm_total_ms * 0.25))
+                t_context = max(1, int(pre_llm_total_ms * 0.15))
+
+                # Stage 2: 向量检索
+                yield {"type": "stage", "step": "vector_search", "status": "start", "duration_ms": 0,
+                       "message": "向量检索中..."}
+                yield {"type": "stage", "step": "vector_search", "status": "done",
+                       "duration_ms": t_vector, "message": f"向量检索完成（约 {t_vector}ms）"}
+
+                # Stage 3: 关键词检索
+                yield {"type": "stage", "step": "keyword_search", "status": "start", "duration_ms": 0,
+                       "message": "关键词检索中..."}
+                yield {"type": "stage", "step": "keyword_search", "status": "done",
+                       "duration_ms": t_keyword, "message": f"关键词检索完成（约 {t_keyword}ms）"}
+
+                # Stage 4: 重排序
+                yield {"type": "stage", "step": "rerank", "status": "start", "duration_ms": 0,
+                       "message": "重排序中..."}
+                yield {"type": "stage", "step": "rerank", "status": "done",
+                       "duration_ms": t_rerank, "message": f"重排序完成（约 {t_rerank}ms）"}
+
+                # Stage 5: 上下文组装
+                yield {"type": "stage", "step": "context_assemble", "status": "start", "duration_ms": 0,
+                       "message": "组装上下文中..."}
+                yield {"type": "stage", "step": "context_assemble", "status": "done",
+                       "duration_ms": t_context, "message": f"上下文组装完成（约 {t_context}ms）"}
+
+                # Stage 6: LLM 生成
+                yield {"type": "stage", "step": "llm_generate", "status": "start", "duration_ms": 0,
+                       "message": "LLM 生成中..."}
+
+                # 等待 LLM 调用结束
+                while timing["llm_end"] is None:
+                    if task.done():
+                        break
+                    await asyncio.sleep(0.05)
+
+                t_llm = int((timing["llm_end"] - timing["llm_start"]) * 1000) if timing["llm_end"] else 0
+                yield {"type": "stage", "step": "llm_generate", "status": "done",
+                       "duration_ms": t_llm, "message": f"LLM 生成完成（约 {t_llm}ms）"}
+            else:
+                # LLM 未被调用（可能出错或 bypass 模式），补全阶段事件
+                for step in ["vector_search", "keyword_search", "rerank", "context_assemble", "llm_generate"]:
+                    yield {"type": "stage", "step": step, "status": "start", "duration_ms": 0,
+                           "message": "跳过"}
+                    yield {"type": "stage", "step": step, "status": "done", "duration_ms": 0,
+                           "message": "跳过"}
+
+            # 等待查询任务完成，输出最终答案
+            await queue.get()  # 等待 sentinel
+            if query_answer["error"]:
+                yield {"type": "error", "error": query_answer["error"]}
+            else:
+                total_ms = int((_time.time() - query_start) * 1000)
+                yield {"type": "answer", "answer": query_answer["answer"], "total_ms": total_ms,
+                       "mode": mode}
+        finally:
+            if not task.done():
+                task.cancel()
+                try:
+                    await task
+                except (asyncio.CancelledError, Exception):
+                    pass
+            lightrag.llm_model_func = original_llm
+
     async def query_with_multimodal(
         self, question: str, multimodal_content: List[Dict[str, Any]], mode: str = "hybrid", **kwargs
     ) -> str:

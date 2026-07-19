@@ -14,10 +14,13 @@ public class WenjianxinxiService {
 
     private final WenjianxinxiDao dao;
 
-    public IPage<WenjianxinxiEntity> page(int current, int size, String keyword, Long folderId) {
+    public IPage<WenjianxinxiEntity> page(int current, int size, String keyword, Long folderId, String sfsh) {
         QueryWrapper<WenjianxinxiEntity> qw = new QueryWrapper<>();
         if (keyword != null && !keyword.isEmpty()) {
             qw.and(w -> w.like("biaoti", keyword).or().like("wenjianneirong", keyword));
+        }
+        if (sfsh != null && !sfsh.isEmpty()) {
+            qw.eq("sfsh", sfsh);
         }
         qw.orderByDesc("addtime");
         return dao.selectPage(new Page<>(current, size), qw);

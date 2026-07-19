@@ -14,6 +14,7 @@ const routes = [
       { path: 'home', name: 'Home', component: () => import('@/views/home.vue'), meta: { title: '首页' } },
       { path: 'users', name: 'Users', component: () => import('@/views/modules/users/list.vue'), meta: { title: '用户管理' } },
       { path: 'employee', name: 'Employee', component: () => import('@/views/modules/employee/list.vue'), meta: { title: '员工管理' } },
+      { path: 'dept', name: 'Dept', component: () => import('@/views/modules/dept/list.vue'), meta: { title: '部门管理' } },
       { path: 'gonggao', name: 'Gonggao', component: () => import('@/views/modules/gonggao/list.vue'), meta: { title: '公告管理' } },
       { path: 'wenjian', name: 'Wenjian', component: () => import('@/views/modules/wenjian/list.vue'), meta: { title: '文件管理' } },
       { path: 'gongzuorizhi', name: 'Gongzuorizhi', component: () => import('@/views/modules/gongzuorizhi/list.vue'), meta: { title: '工作日志' } },

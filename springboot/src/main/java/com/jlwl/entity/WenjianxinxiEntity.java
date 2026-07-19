@@ -19,6 +19,10 @@ public class WenjianxinxiEntity {
     private LocalDateTime fabuTime;
     @TableField("addtime")
     private LocalDateTime addtime;
+    @TableField("sfsh")
+    private String sfsh;        // 审核状态: 是=已通过, 否=待审核, 驳回=已驳回
+    @TableField("shhf")
+    private String shhf;        // 审核回复
     @TableLogic
     @TableField("del_flag")
     private Integer delFlag;

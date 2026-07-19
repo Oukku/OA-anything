@@ -16,6 +16,7 @@
         <el-menu-item index="/home"><i class="el-icon-house"></i><span>首页</span></el-menu-item>
         <el-menu-item index="/users"><i class="el-icon-user"></i><span>用户管理</span></el-menu-item>
         <el-menu-item index="/employee"><i class="el-icon-user-solid"></i><span>员工管理</span></el-menu-item>
+        <el-menu-item index="/dept"><i class="el-icon-s-operation"></i><span>部门管理</span></el-menu-item>
         <el-menu-item index="/gonggao"><i class="el-icon-bell"></i><span>公告管理</span></el-menu-item>
         <el-menu-item index="/wenjian"><i class="el-icon-folder"></i><span>文件管理</span></el-menu-item>
         <el-menu-item index="/gongzuorizhi"><i class="el-icon-document"></i><span>工作日志</span></el-menu-item>
