@@ -97,7 +97,7 @@ def _doc_info(doc_id: str, meta: dict) -> DocumentInfo:
 
 
 async def _index_doc_async(engine: RagEngine, doc_id: str, file_path: str):
-    """后台异步：解析 -> 存文本 -> LightRAG 索引。"""
+    """后台异步：解析 -> 存文本 -> LightRAG 索引 -> 预生成图谱缓存。"""
     meta = engine._indexed_files.get(doc_id)
     if not meta:
         logger.error("async index: doc %s not found", doc_id)
@@ -117,6 +117,14 @@ async def _index_doc_async(engine: RagEngine, doc_id: str, file_path: str):
         meta["status"] = "indexed"
         logger.info("doc %s indexed: %d pages, %d chunks",
                     doc_id, result["pages"], result["meta"]["chunk_count"])
+
+        # 预生成知识图谱缓存，进入图谱界面直接读，无需等待
+        try:
+            from app.api.routes.graph import build_and_cache_graph
+            working_dir = Path(engine.config.working_dir_path)
+            build_and_cache_graph(doc_id, file_path, working_dir)
+        except Exception as ge:
+            logger.warning("pre-build graph cache failed for %s: %s", doc_id, ge)
     except Exception as e:
         meta["status"] = "failed"
         meta["error"] = str(e)
@@ -281,9 +289,14 @@ async def reparse_document(
 
     await _clear_old()
 
-    # 删除旧解析文本
+    # 删除旧解析文本 + 旧图谱缓存
     old_parsed = _parsed_dir() / f"{doc_id}.md"
     old_parsed.unlink(missing_ok=True)
+    try:
+        from app.api.routes.graph import _delete_graph_cache
+        _delete_graph_cache(doc_id)
+    except Exception as ce:
+        logger.warning("clear graph cache failed for %s: %s", doc_id, ce)
 
     meta["status"] = "parsing"
     meta.pop("error", None)
@@ -302,9 +315,14 @@ async def delete_document(
         raise HTTPException(status_code=404, detail="document not found")
     p = Path(meta["file_path"])
     p.unlink(missing_ok=True)
-    # 清理解析文本和 LightRAG chunk
+    # 清理解析文本、图谱缓存和 LightRAG chunk
     old_parsed = _parsed_dir() / f"{doc_id}.md"
     old_parsed.unlink(missing_ok=True)
+    try:
+        from app.api.routes.graph import _delete_graph_cache
+        _delete_graph_cache(doc_id)
+    except Exception as ce:
+        logger.warning("delete graph cache failed for %s: %s", doc_id, ce)
     try:
         await engine.initialize()
         await engine.rag._ensure_lightrag_initialized()
